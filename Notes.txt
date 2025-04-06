@@ -1,0 +1,104 @@
+﻿~/Documents/pymsscreen-test
+
+~/Documents/Parviel-Met-Test
+
+Further enhancements 
+
+“ top_n a user-defined setting in your extract_config.yaml,
+
+export:
+  top_ms2_peaks: 10
+
+
+
+
+Adaptations:
+
+Bring delete in the set dynamic table for each row
+Reaarange the dyanamic table.. drag and shift the rows
+
+Set working directory automatically you enter the path
+Add units in the settings page (extraction)
+Extract & Prescreen same button 
+Copy Peaklist to clipboard – so this can be exported to mulitiple websites
+Export to MassBank and MetFrag and we can set the landing page for further processing
+Option to switch between relative and absolute intensities 
+
+For MS2 and Fragments → Relative intensities is what should be used.. 
+MSMS always scle to zero.. set xaxis to start always with 0 and give 10% or 20%+ from precursor to give space int eh x axis
+
+
+Test moving it into differernt folders within the working directory
+Test changing the json-- like tags and see how it reacts
+MS1- have the option of picking top 5 or top 10 or more maybe..
+I need to test suspect screening also..(test with only mass)
+
+Blanks mzML files are not working for extraction.. 
+
+MS1 is not present but MS2 is triggered.. 1,2,4 triazole.. SO why that peak was not showing up in MS1
+
+Table in plot - 
+
+
+
+Extraction code logic 
+
+for sp in ms1_spectra:
+    rt = sp.getRT() / 60
+    mzs, ints = sp.get_peaks()
+    intensity = sum(i for m, i in zip(mzs, ints) if fine_low <= m <= fine_high)
+
+    This is filtering each full MS1 spectrum to get your EIC
+
+for sp in ms2_spectra:
+    ...
+    peak_list = ";".join(
+        f"{mz_val:.4f}:{int_val:.0f}"
+        for mz_val, int_val in zip(ms2_mzs, ms2_ints)
+    )
+
+    You extract fragment peaks from the MS2 scan triggered by a precursor
+
+Load necessary modules: pandas, pyopenms, etc.
+    • Get JSON request with working_directory.
+    • Define paths to config, state, and compound table.
+    • Create an output folder ms2_spectra.
+    • Load Files:
+	state.json: Holds information on mzML files (including tags and adducts).
+    • extract_config.yaml: Contains tolerance values.
+    • comprehensive_table.csv: List of compounds with m/z and metadata.
+    • Extract tolerances from the YAML config (e.g., MS1 ppm, EIC window, RT window).
+    • For each file, load it using pyopenms, split into MS1 and MS2 spectra.
+    • Match the tag and adduct to the mzML file.
+    • Compute fine m/z window using ppm.
+    • Extract MS1 EIC (Extracted Ion Chromatogram):
+    • Loop through MS1 scans and collect intensity within fine m/z window.
+    • Save this as a CSV file.
+    • Extract MS2 spectra:
+    • Loop through MS2 scans and match precursors using coarse window.
+    • Save peaks and metadata (scan ID, RT, intensity) to another CSV.
+      Prescreening
+Load Input Files:
+    • Load the config (with thresholds), compound table, and find the generated EIC/MS2 files.
+    • Extract Thresholds:
+    • MS1 intensity threshold, MS2 peak intensity threshold, signal-to-noise ratio, RT tolerance.
+    • Loop through each compound row:
+    • Construct base filename from compound info (ID, adduct, tag).
+    • MS1 Check:
+        ◦ Check if EIC file exists and is not empty.
+        ◦ Calculate max intensity and mean intensity.
+        ◦ Determine:
+            ▪ If MS1 data exists.
+            ▪ If it's above threshold.
+            ▪ If it shows good S/N ratio.
+    • MS2 Check:
+        ◦ Check if MS2 file exists and is not empty.
+        ◦ For each peak list, check if any peak passes intensity threshold.
+        ◦ If MS1 RT is known, check if there's an MS2 scan close in RT (within tolerance).
+    • Flag Summary:
+        ◦ Compile all QA flags and RTs.
+        ◦ If all 6 QA checks pass → qa_pass = True.
+    • Write Summary Table:
+    • Save as summary_table.csv.
+
+
