@@ -43,66 +43,93 @@ jobs:
 
   build-frontend:
     needs: build-backend
-    timeout-minutes: 90
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         arch: [x64]
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # ✅ Download backend binary built earlier
       - name: Download Backend Binary
         uses: actions/download-artifact@v4
         with:
           name: web_app_binary
           path: electron-app/public/backend/
 
+      # ✅ Cache node_modules
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: electron-app/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('electron-app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # ✅ Cache Playwright browser binaries
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('electron-app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      # ✅ Install Node dependencies fast
       - name: Install Frontend Dependencies
         working-directory: electron-app
-        run: npm install
+        run: npm ci
 
+      # ✅ Build React/Vite frontend
       - name: Build React App
         working-directory: electron-app
         run: npm run build
 
-      - name: Install Playwright and Dependencies
+      # ✅ Debug app contents
+      - name: Debug App Folder
+        working-directory: electron-app
+        run: |
+          echo "📂 Listing dist/"
+          ls -la dist || echo "⚠️ dist/ not found yet"
+          echo "📂 Listing electron/"
+          ls -la electron || echo "⚠️ electron/ not found"
+          echo "📂 Current directory:"
+          pwd
+
+      # ✅ Install Playwright for E2E testing
+      - name: Install Playwright and Browsers
         working-directory: electron-app
         run: |
           npm install --save-dev playwright @playwright/test
-          npx playwright install
+          npx playwright install chromium  # 💡 only chromium to speed it up
         shell: bash
 
+      # ✅ (Linux only) System deps for Playwright GUI support
       - name: Install Playwright Browser Deps (Linux only)
         if: runner.os == 'Linux'
         working-directory: electron-app
         run: npx playwright install-deps
 
-      - name: Debug App Folder
-        working-directory: electron-app
-        run: |
-          echo "📂 Listing dist/"
-          ls -la dist
-          echo "📂 Listing electron/"
-          ls -la electron
-          echo "📂 Listing current directory"
-          pwd
-
+      # ✅ Run Playwright UI tests
       - name: Run Playwright Tests
         working-directory: electron-app
         run: npm run test:playwright
         env:
           CI: true
 
+      # ✅ Build the Electron app
       - name: Build Electron App
         working-directory: electron-app
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      # ✅ Upload final packaged app (cross-platform)
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
