@@ -16,17 +16,32 @@ function createWindow() {
     }
   });
 
-  // Load your React build output
   win.loadFile(path.join(__dirname, '../dist/index.html'));
   win.webContents.openDevTools();
 }
 
 function startFlask() {
-  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-  flaskProcess = spawn(pythonCmd, ['web_app.py'], {
-    cwd: path.join(__dirname, '..'),
-    shell: true
-  });
+  const isProd = app.isPackaged;
+  const platform = process.platform;
+  let exePath;
+
+  if (isProd) {
+    if (platform === 'win32') {
+      exePath = path.join(process.resourcesPath, 'backend', 'web_app.exe');
+    } else if (platform === 'darwin') {
+      exePath = path.join(process.resourcesPath, 'backend', 'web_app_macos');
+    } else {
+      exePath = path.join(process.resourcesPath, 'backend', 'web_app_linux');
+    }
+  } else {
+    exePath = path.join(__dirname, 'public', 'backend', {
+      win32: 'web_app.exe',
+      darwin: 'web_app_macos',
+      linux: 'web_app_linux'
+    }[platform]);
+  }
+
+  flaskProcess = spawn(exePath, [], { shell: true });
 
   flaskProcess.stdout.on('data', (data) => {
     console.log(`[Flask] ${data}`);
@@ -34,6 +49,10 @@ function startFlask() {
 
   flaskProcess.stderr.on('data', (data) => {
     console.error(`[Flask error] ${data}`);
+  });
+
+  flaskProcess.on('error', (err) => {
+    console.error('[Flask failed to start]', err);
   });
 }
 

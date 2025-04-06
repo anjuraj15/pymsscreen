@@ -12,36 +12,42 @@
     "electron": "electron .",
     "build:electron": "electron-builder --publish never --linux AppImage --x64"
   },
-  
+
   "build": {
-    "appId": "com.pymsscreen",
-    "productName": "PyMSscreen",
-    "files": [
-      "dist/**/*",
-      "electron/**/*",
-      "web_app.py",
-      "myenv/",
-      "requirements.txt"
-    ],
-    "extraResources": [
-      {
-        "from": "myenv",
-        "to": "myenv"
-      }
-    ],
-    "directories": {
-      "buildResources": "electron/icons"
+  "appId": "com.pymsscreen",
+  "productName": "PyMSscreen",
+  "files": [
+    "dist/**/*",
+    "electron/**/*"
+  ],
+  "extraFiles": [
+    {
+      "from": "electron/public/backend/web_app.exe",
+      "to": "backend/web_app.exe"
     },
-    "win": {
-      "target": "nsis"
+    {
+      "from": "electron/public/backend/web_app_linux",
+      "to": "backend/web_app_linux"
     },
-    "mac": {
-      "target": "dmg"
-    },
-    "linux": {
-      "target": "AppImage"
+    {
+      "from": "electron/public/backend/web_app_macos",
+      "to": "backend/web_app_macos"
     }
+  ],
+  "directories": {
+    "buildResources": "electron/icons"
   },
+  "win": {
+    "target": "nsis"
+  },
+  "mac": {
+    "target": "dmg"
+  },
+  "linux": {
+    "target": "AppImage"
+  }
+}
+  
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",
