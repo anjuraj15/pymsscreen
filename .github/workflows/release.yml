@@ -44,11 +44,10 @@ jobs:
       - name: Build Electron App
         run: npm run build:electron
         env:
-          # Prevents mac-related signing prompts
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v2
         with:
           name: pyms-${{ matrix.os }}
           path: |
