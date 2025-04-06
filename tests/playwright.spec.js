@@ -6,6 +6,7 @@ import path from 'path';
 
 test('Set working dir, save state, and confirm backend responds', async () => {
   const backendPath = path.resolve('public/backend/web_app_linux');
+  console.log('Looking for backend binary at:', backendPath);
   const flask = spawn(backendPath, [], {
     cwd: path.dirname(backendPath),
     detached: true,

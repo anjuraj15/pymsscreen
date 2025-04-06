@@ -59,8 +59,8 @@ jobs:
       - name: Download Backend Binary
         uses: actions/download-artifact@v4
         with:
-          name: web_app_binary
-          path: electron-app/public/backend/
+         name: web_app_binary
+         path: public/backend/
 
       # ✅ Cache node_modules
       - name: Cache node_modules
