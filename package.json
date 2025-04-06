@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "electron": "electron .",
     "build:electron": "electron-builder --publish never",
+    "test:playwright": "npx playwright test tests/playwright.spec.js",
     "build:electron:x64": "electron-builder --linux AppImage --x64 --publish never",
     "build:electron:arm64": "electron-builder --linux AppImage --arm64 --publish never"
   },
@@ -68,6 +69,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@playwright/test": "^1.51.1",
     "@tailwindcss/cli": "^4.0.15",
     "@tailwindcss/postcss": "^4.0.17",
     "@types/react": "^19.0.10",
@@ -80,6 +82,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
+    "playwright": "^1.51.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.17",
     "vite": "^6.2.0"
