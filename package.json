@@ -2,6 +2,8 @@
   "name": "pyms-react",
   "private": true,
   "version": "0.0.0",
+  "description": "PyMSscreen: A cross-platform Electron app with Flask backend",
+  "author": "Your Name or Org",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -10,44 +12,44 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron": "electron .",
-    "build:electron": "electron-builder --publish never"
+    "build:electron": "electron-builder --publish never",
+    "build:electron:x64": "electron-builder --linux AppImage --x64 --publish never",
+    "build:electron:arm64": "electron-builder --linux AppImage --arm64 --publish never"
   },
-
   "build": {
-  "appId": "com.pymsscreen",
-  "productName": "PyMSscreen",
-  "files": [
-    "dist/**/*",
-    "electron/**/*"
-  ],
-  "extraFiles": [
-    {
-      "from": "electron/public/backend/web_app.exe",
-      "to": "backend/web_app.exe"
+    "appId": "com.pymsscreen",
+    "productName": "PyMSscreen",
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "electron/public/backend/web_app.exe",
+        "to": "backend/web_app.exe"
+      },
+      {
+        "from": "electron/public/backend/web_app_linux",
+        "to": "backend/web_app_linux"
+      },
+      {
+        "from": "electron/public/backend/web_app_macos",
+        "to": "backend/web_app_macos"
+      }
+    ],
+    "directories": {
+      "buildResources": "electron/icons"
     },
-    {
-      "from": "electron/public/backend/web_app_linux",
-      "to": "backend/web_app_linux"
+    "win": {
+      "target": "nsis"
     },
-    {
-      "from": "electron/public/backend/web_app_macos",
-      "to": "backend/web_app_macos"
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
     }
-  ],
-  "directories": {
-    "buildResources": "electron/icons"
   },
-  "win": {
-    "target": "nsis"
-  },
-  "mac": {
-    "target": "dmg"
-  },
-  "linux": {
-    "target": "AppImage"
-  }
-}
-  
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",
