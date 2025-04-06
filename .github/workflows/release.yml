@@ -1,23 +1,23 @@
-name: Build Cross-Platform Electron App
+name: Build Electron App
 
 on:
   push:
     tags:
-      - 'v*.*.*'  # Example: v1.0.0
+      - 'v*.*.*'  # Trigger only on version tags like v1.0.0
 
 jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest] # Add macos-latest later if needed
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -25,11 +25,26 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.10
+          python-version: '3.10'
 
-      - name: Install Python Deps + PyInstaller
+      - name: Install Python Dependencies
         run: |
-          pip install flask flask-cors pyinstaller
+          pip install pyinstaller flask flask-cors
 
-      - name:  Build Backend (PyInstaller)
-        run
+      - name: Compile Flask Backend with PyInstaller
+        run: pyinstaller --onefile --name web_app web_app.py
+
+      - name: Install Frontend Dependencies
+        run: npm install
+
+      - name: Build React App
+        run: npm run build
+
+      - name: Package Electron App
+        run: npm run build:electron
+
+      - name: Upload Installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: pyms-${{ matrix.os }}
+          path: dist/*
