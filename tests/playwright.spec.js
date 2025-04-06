@@ -1,6 +1,7 @@
-const { _electron: electron } = require('playwright');
-const { test, expect } = require('@playwright/test');
-const axios = require('axios');
+import { _electron as electron } from 'playwright';
+import { test, expect } from '@playwright/test';
+import axios from 'axios';
+
 
 test('Set working dir, save state, and confirm backend responds', async () => {
   const electronApp = await electron.launch({ args: ['.'] });
