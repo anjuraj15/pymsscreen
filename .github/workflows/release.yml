@@ -6,116 +6,68 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-latest
+            arch: arm64
+          - os: windows-latest
+            arch: x64
+          - os: macos-latest
+            arch: x64
 
-      - name: Set up Node.js
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Python & Build Backend
+      - name: Install Python Dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install pyinstaller flask flask-cors
-          pyinstaller --onefile --name web_app web_app.py
-          mkdir -p electron/public/backend
-          cp dist/web_app electron/public/backend/web_app_linux
 
-      - name: Install & Build Frontend
+      - name: Compile Flask Backend with PyInstaller
+        run: pyinstaller --onefile --name web_app web_app.py
+
+      - name: Install Frontend Dependencies
+        run: npm install
+
+      - name: Build React App
+        run: npm run build
+
+      - name: Build Electron App
         run: |
-          npm install
-          npm run build
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            npm run build:electron:${{ matrix.arch }}
+          else
+            npm run build:electron
+          fi
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Build Electron App (Linux)
-        run: npm run build:electron-linux
-
-      - name: Upload Artifact
+      - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-linux
+          name: pyms-${{ matrix.os }}-${{ matrix.arch }}
           path: |
             dist/
-            *.AppImage
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Python & Build Backend
-        run: |
-          pip install pyinstaller flask flask-cors
-          pyinstaller --onefile --name web_app web_app.py
-          mkdir electron\public\backend
-          copy dist\web_app.exe electron\public\backend\web_app.exe
-
-      - name: Install & Build Frontend
-        run: |
-          npm install
-          npm run build
-
-      - name: Build Electron App (Windows)
-        run: npm run build:electron-windows
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-windows
-          path: |
-            dist/
+            out/
+            release/
             *.exe
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Python & Build Backend
-        run: |
-          pip install pyinstaller flask flask-cors
-          pyinstaller --onefile --name web_app web_app.py
-          mkdir -p electron/public/backend
-          cp dist/web_app electron/public/backend/web_app_macos
-
-      - name: Install & Build Frontend
-        run: |
-          npm install
-          npm run build
-
-      - name: Build Electron App (macOS)
-        run: npm run build:electron-mac
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-macos
-          path: |
-            dist/
             *.dmg
+            *.AppImage
