@@ -45,6 +45,7 @@ jobs:
 
       - name: Upload Installer
         uses: actions/upload-artifact@v2.3.1
+        continue-on-error: true
         with:
           name: pyms-${{ matrix.os }}
           path: dist/*
