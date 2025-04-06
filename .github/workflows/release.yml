@@ -8,6 +8,7 @@ on:
 jobs:
   build-backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     steps:
       - name: Checkout Code
@@ -42,6 +43,7 @@ jobs:
 
   build-frontend:
     needs: build-backend
+    timeout-minutes: 90
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -78,6 +80,16 @@ jobs:
         if: runner.os == 'Linux'
         working-directory: electron-app
         run: npx playwright install-deps
+
+      - name: Debug App Folder
+        working-directory: electron-app
+        run: |
+          echo "📂 Listing dist/"
+          ls -la dist
+          echo "📂 Listing electron/"
+          ls -la electron
+          echo "📂 Listing current directory"
+          pwd
 
       - name: Run Playwright Tests
         working-directory: electron-app

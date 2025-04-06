@@ -4,7 +4,7 @@ import axios from 'axios';
 
 
 test('Set working dir, save state, and confirm backend responds', async () => {
-  const electronApp = await electron.launch({ args: ['.'] });
+  const electronApp = await electron.launch({ args: ['electron/main.cjs'] });
   const window = await electronApp.firstWindow();
 
   await window.waitForLoadState('domcontentloaded');
