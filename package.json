@@ -39,7 +39,7 @@
       "target": "dmg"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
       "arch": ["x64"]
     }
   },
