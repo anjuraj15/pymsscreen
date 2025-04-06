@@ -20,19 +20,19 @@ jobs:
 
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
-	with:
-           environment-file: environment.core.yml
-	   environment-name: backend
-	   init-shell: bash
-	   cache-environment: true
-	   cache-downloads: true
+        with:
+          environment-file: environment.core.yml
+          environment-name: backend
+          init-shell: bash
+          cache-environment: true
+          cache-downloads: true
 
       - name: Install pip-only dependencies
         run: micromamba run -n backend pip install -r requirements.extra.txt
 
       - name: Install PyInstaller
         run: micromamba run -n backend pip install pyinstaller
-      
+
       - name: Build Flask Backend with PyInstaller
         run: |
           micromamba run -n backend pyinstaller --clean --log-level DEBUG --onefile --name web_app web_app.py
@@ -40,13 +40,12 @@ jobs:
           mkdir -p electron-app/public/backend
 
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-             cp dist/web_app.exe electron-app/public/backend/web_app.exe
+            cp dist/web_app.exe electron-app/public/backend/web_app.exe
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
-             cp dist/web_app electron-app/public/backend/web_app_macos
+            cp dist/web_app electron-app/public/backend/web_app_macos
           else
-             cp dist/web_app electron-app/public/backend/web_app_linux
+            cp dist/web_app electron-app/public/backend/web_app_linux
           fi
-
         shell: bash
 
       - name: Test Flask Backend
