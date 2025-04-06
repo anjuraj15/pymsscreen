@@ -7,8 +7,11 @@ on:
 
 jobs:
   build-backend:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 90
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout Code
@@ -24,7 +27,6 @@ jobs:
           cache-downloads: true
 
       - name: Install pip-only dependencies + pyinstaller
-        working-directory: ${{ github.workspace }}
         run: |
           micromamba run -n backend pip install -r requirements.txt
           micromamba run -n backend pip install pyinstaller
@@ -33,12 +35,19 @@ jobs:
         run: |
           micromamba run -n backend pyinstaller --clean --log-level DEBUG --onefile --name web_app web_app.py
           mkdir -p backend-out
-          mv dist/web_app backend-out/web_app_linux  # For Linux; adjust if needed
+          
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            mv dist/web_app backend-out/web_app_linux
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            mv dist/web_app backend-out/web_app_macos
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            mv dist/web_app.exe backend-out/web_app.exe
+          fi
 
       - name: Upload Backend Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: web_app_binary
+          name: web_app_binary_${{ runner.os }}
           path: backend-out/
 
   build-frontend:
@@ -55,18 +64,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ✅ Download backend binary built earlier
       - name: Download Backend Binary
         uses: actions/download-artifact@v4
         with:
-         name: web_app_binary
-         path: public/backend/
-      
-      - name: Make backend binary executable (Linux only)
+          name: web_app_binary_${{ runner.os }}
+          path: public/backend/
+
+      - name: Make backend binary executable (Linux/macOS)
         if: runner.os != 'Windows'
-        run: chmod +x public/backend/web_app_linux
-      
-      # ✅ Cache node_modules
+        run: chmod +x public/backend/*
+
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
@@ -75,7 +82,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      # ✅ Cache Playwright browser binaries
       - name: Cache Playwright Browsers
         uses: actions/cache@v4
         with:
@@ -84,49 +90,41 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
 
-      # ✅ Install Node dependencies fast
       - name: Install Frontend Dependencies
         run: npm ci
 
-      # ✅ Build React/Vite frontend
       - name: Build React App
         run: npm run build
 
-      # ✅ Debug app contents
       - name: Debug App Folder
         run: |
           echo "📂 Listing dist/"
           ls -la dist || echo "⚠️ dist/ not found yet"
-          echo "📂 Listing electron/"
-          ls -la electron || echo "⚠️ electron/ not found"
+          echo "📂 Listing public/backend/"
+          ls -la public/backend || echo "⚠️ backend/ not found"
           echo "📂 Current directory:"
           pwd
 
-      # ✅ Install Playwright for E2E testing
       - name: Install Playwright and Browsers
         run: |
           npm install --save-dev playwright @playwright/test
-          npx playwright install chromium  # 💡 only chromium to speed it up
+          npx playwright install chromium
         shell: bash
 
-      # ✅ (Linux only) System deps for Playwright GUI support
       - name: Install Playwright Browser Deps (Linux only)
         if: runner.os == 'Linux'
         run: npx playwright install-deps
 
-      # ✅ Run Playwright UI tests
       - name: Run Playwright Tests
         run: npm run test:playwright
         env:
           CI: true
 
-      # ✅ Build the Electron app
       - name: Build Electron App
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      # ✅ Upload final packaged app (cross-platform)
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
