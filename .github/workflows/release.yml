@@ -21,14 +21,11 @@ jobs:
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          miniconda-version: "latest"
-          auto-update-conda: true
-          activate-environment: backend
+          environment-name: backend
           environment-file: environment.yml
           init-shell: bash
           cache-environment: true
           cache-downloads: true
-          channels: conda-forge,bioconda,defaults
 
       - name: Install PyInstaller
         run: |
