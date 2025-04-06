@@ -82,17 +82,14 @@ jobs:
 
       # ✅ Install Node dependencies fast
       - name: Install Frontend Dependencies
-        working-directory: electron-app
         run: npm ci
 
       # ✅ Build React/Vite frontend
       - name: Build React App
-        working-directory: electron-app
         run: npm run build
 
       # ✅ Debug app contents
       - name: Debug App Folder
-        working-directory: electron-app
         run: |
           echo "📂 Listing dist/"
           ls -la dist || echo "⚠️ dist/ not found yet"
@@ -103,7 +100,6 @@ jobs:
 
       # ✅ Install Playwright for E2E testing
       - name: Install Playwright and Browsers
-        working-directory: electron-app
         run: |
           npm install --save-dev playwright @playwright/test
           npx playwright install chromium  # 💡 only chromium to speed it up
@@ -112,19 +108,16 @@ jobs:
       # ✅ (Linux only) System deps for Playwright GUI support
       - name: Install Playwright Browser Deps (Linux only)
         if: runner.os == 'Linux'
-        working-directory: electron-app
         run: npx playwright install-deps
 
       # ✅ Run Playwright UI tests
       - name: Run Playwright Tests
-        working-directory: electron-app
         run: npm run test:playwright
         env:
           CI: true
 
       # ✅ Build the Electron app
       - name: Build Electron App
-        working-directory: electron-app
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
