@@ -44,7 +44,7 @@ jobs:
         run: npm run build:electron
 
       - name: Upload Installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: pyms-${{ matrix.os }}
           path: dist/*
