@@ -61,7 +61,11 @@ jobs:
         with:
          name: web_app_binary
          path: public/backend/
-
+      
+      - name: Make backend binary executable (Linux only)
+        if: runner.os == 'Linux'
+        run: chmod +x public/backend/web_app_linux
+      
       # ✅ Cache node_modules
       - name: Cache node_modules
         uses: actions/cache@v4
