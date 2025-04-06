@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron": "electron .",
-    "build:electron": "electron-builder --publish never"
+    "build:electron": "electron-builder --publish never --linux AppImage --x64"
   },
   
   "build": {
@@ -40,7 +40,6 @@
     },
     "linux": {
       "target": "AppImage",
-      "arch": ["x64"]
     }
   },
   "dependencies": {
