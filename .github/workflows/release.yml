@@ -25,7 +25,9 @@ jobs:
           init-shell: bash
           cache-environment: true
           cache-downloads: true
-
+          cache-environment-key: env-${{ runner.os }}-${{ hashFiles('environment.core.yml') }}
+          cache-downloads-key: pkgs-${{ runner.os }}-${{ hashFiles('environment.core.yml') }}
+      
       - name: Install pip-only dependencies + pyinstaller
         run: |
           micromamba run -n backend pip install -r requirements.txt
