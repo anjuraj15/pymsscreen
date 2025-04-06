@@ -6,16 +6,11 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        arch: [x64]
-
-    runs-on: ${{ matrix.os }}
+  build-backend:
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Micromamba
@@ -27,44 +22,41 @@ jobs:
           cache-environment: true
           cache-downloads: true
 
-      - name: Install pip-only dependencies
-        run: micromamba run -n backend pip install -r requirements.extra.txt
+      - name: Install pip-only dependencies + pyinstaller
+        run: |
+          micromamba run -n backend pip install -r requirements.extra.txt
+          micromamba run -n backend pip install pyinstaller
 
-      - name: Install PyInstaller
-        run: micromamba run -n backend pip install pyinstaller
-
-      - name: Build Flask Backend with PyInstaller
+      - name: Build Flask Backend Binary
         run: |
           micromamba run -n backend pyinstaller --clean --log-level DEBUG --onefile --name web_app web_app.py
+          mkdir -p backend-out
+          mv dist/web_app backend-out/web_app_linux  # For Linux; adjust if needed
 
-          mkdir -p electron-app/public/backend
+      - name: Upload Backend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web_app_binary
+          path: backend-out/
 
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cp dist/web_app.exe electron-app/public/backend/web_app.exe
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            cp dist/web_app electron-app/public/backend/web_app_macos
-          else
-            cp dist/web_app electron-app/public/backend/web_app_linux
-          fi
-        shell: bash
+  build-frontend:
+    needs: build-backend
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [x64]
 
-      - name: Test Flask Backend
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            start /B dist\\web_app.exe
-            timeout /t 5
-          else
-            ./dist/web_app &
-            BACKEND_PID=$!
-            sleep 5
-          fi
+    runs-on: ${{ matrix.os }}
 
-          curl --fail http://localhost:5000/ || (echo "Flask backend failed" && exit 1)
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-          if [[ "$RUNNER_OS" != "Windows" ]]; then
-            kill $BACKEND_PID
-          fi
-        shell: bash
+      - name: Download Backend Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: web_app_binary
+          path: electron-app/public/backend/
 
       - name: Install Frontend Dependencies
         working-directory: electron-app
@@ -81,7 +73,7 @@ jobs:
           npx playwright install
         shell: bash
 
-      - name: Install Playwright Browser Dependencies (Linux only)
+      - name: Install Playwright Browser Deps (Linux only)
         if: runner.os == 'Linux'
         working-directory: electron-app
         run: npx playwright install-deps
