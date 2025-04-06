@@ -35,7 +35,6 @@ jobs:
         run: |
           micromamba run -n backend pyinstaller --clean --log-level DEBUG --onefile --name web_app web_app.py
           mkdir -p backend-out
-          
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             mv dist/web_app backend-out/web_app_linux
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
@@ -49,6 +48,12 @@ jobs:
         with:
           name: web_app_binary_${{ runner.os }}
           path: backend-out/
+
+      - name: Suppress micromamba cleanup error
+        if: always()
+        run: |
+          echo "🧹 Cleaning micromamba shell (ignore if already deleted)"
+          rm -rf /Users/runner/work/_temp/setup-micromamba || echo "Already removed"
 
   build-frontend:
     needs: build-backend
