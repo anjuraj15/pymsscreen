@@ -23,9 +23,11 @@ function createWindow() {
 function startFlask() {
   const isProd = app.isPackaged;
   const platform = process.platform;
+
   let exePath;
 
   if (isProd) {
+    // App is packaged
     if (platform === 'win32') {
       exePath = path.join(process.resourcesPath, 'backend', 'web_app.exe');
     } else if (platform === 'darwin') {
@@ -34,6 +36,7 @@ function startFlask() {
       exePath = path.join(process.resourcesPath, 'backend', 'web_app_linux');
     }
   } else {
+    // Development mode
     exePath = path.join(__dirname, 'public', 'backend', {
       win32: 'web_app.exe',
       darwin: 'web_app_macos',
@@ -41,19 +44,23 @@ function startFlask() {
     }[platform]);
   }
 
-  flaskProcess = spawn(exePath, [], { shell: true });
+  const flaskProcess = spawn(exePath, [], {
+    shell: true,
+  });
 
   flaskProcess.stdout.on('data', (data) => {
     console.log(`[Flask] ${data}`);
   });
 
   flaskProcess.stderr.on('data', (data) => {
-    console.error(`[Flask error] ${data}`);
+    console.error(`[Flask Error] ${data}`);
   });
 
   flaskProcess.on('error', (err) => {
-    console.error('[Flask failed to start]', err);
+    console.error(`[Flask Failed to Start] ${err}`);
   });
+
+  return flaskProcess;
 }
 
 ipcMain.handle('select-directory', async () => {
