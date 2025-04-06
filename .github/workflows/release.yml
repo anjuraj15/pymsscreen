@@ -20,12 +20,12 @@ jobs:
 
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
-	  with:
-	    environment-file: environment.core.yml
-	    environment-name: backend
-	    init-shell: bash
-	    cache-environment: true
-	    cache-downloads: true
+	with:
+           environment-file: environment.core.yml
+	   environment-name: backend
+	   init-shell: bash
+	   cache-environment: true
+	   cache-downloads: true
 
       - name: Install pip-only dependencies
         run: micromamba run -n backend pip install -r requirements.extra.txt
