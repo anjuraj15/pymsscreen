@@ -1,0 +1,30 @@
+# Node modules
+node_modules/
+dist/
+build/
+.cache/
+
+# Mac and system junk
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# PyInstaller
+*.spec
+*.log
+build/
+dist/web_app
+
+# Vite & Electron
+*.local
+.vite
+
+# VS Code
+.vscode/
+
+# dotenv
+.env
