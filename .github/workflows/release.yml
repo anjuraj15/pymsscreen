@@ -23,6 +23,7 @@ jobs:
           cache-downloads: true
 
       - name: Install pip-only dependencies + pyinstaller
+        working-directory: ${{ github.workspace }}
         run: |
           micromamba run -n backend pip install -r requirements.extra.txt
           micromamba run -n backend pip install pyinstaller
