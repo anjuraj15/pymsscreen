@@ -25,7 +25,7 @@ jobs:
       - name: Install pip-only dependencies + pyinstaller
         working-directory: ${{ github.workspace }}
         run: |
-          micromamba run -n backend pip install -r requirements.extra.txt
+          micromamba run -n backend pip install -r requirements.txt
           micromamba run -n backend pip install pyinstaller
 
       - name: Build Flask Backend Binary
