@@ -63,7 +63,7 @@ jobs:
          path: public/backend/
       
       - name: Make backend binary executable (Linux only)
-        if: runner.os == 'Linux'
+        if: runner.os != 'Windows'
         run: chmod +x public/backend/web_app_linux
       
       # ✅ Cache node_modules
