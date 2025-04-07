@@ -85,12 +85,13 @@ jobs:
           echo "🛠️ Renaming backend binary for ${{ runner.os }}"
           if [[ "${{ matrix.os }}" == "macOS" ]]; then
              mv public/backend/web_app_macos public/backend/web_app
+             chmod +x public/backend/web_app
           elif [[ "${{ matrix.os }}" == "Linux" ]]; then
              mv public/backend/web_app_linux public/backend/web_app
+             chmod +x public/backend/web_app
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
              mv public/backend/web_app.exe public/backend/web_app.exe
-          else
-             echo "ℹ️ Windows binary already correctly named"
+
           fi
      
       - name: Make backend executable
