@@ -48,6 +48,7 @@ jobs:
           fi
 
       - name: Build Flask Backend Binary
+        shell: bash 
         run: |
           micromamba run -n backend pyinstaller --clean --log-level DEBUG --onefile --name web_app web_app.py
           mkdir -p backend-out
