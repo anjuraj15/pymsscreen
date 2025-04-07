@@ -25,3 +25,17 @@ pyparsing
 packaging
 requests-file
 flask-cors  
+pyyaml
+certifi
+contourpy
+cycler
+future
+greenlet
+itsdangerous
+jinja2
+pillow
+pytz
+tzdata
+werkzeug
+python-dateutil
+
