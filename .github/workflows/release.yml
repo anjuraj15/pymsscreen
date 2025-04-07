@@ -19,6 +19,7 @@ jobs:
 
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
+        continue-on-error: true
         with:
           environment-file: environment.core.yml
           environment-name: backend
