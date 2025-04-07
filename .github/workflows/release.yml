@@ -68,6 +68,10 @@ jobs:
               --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libOpenMS.dylib:." \
               --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libCoinUtils.3.dylib:." \
               --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libOsi.1.dylib:." \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libOsiClp.1.dylib:." \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libClp.1.dylib:." \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libClpSolver.1.dylib:." \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libCgl.1.dylib:." \ 
               --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libOpenSwathAlgo.dylib:." \
               --add-data "$EXTRA_LIBS/python3.12/site-packages/pyopenms/share/OpenMS:share/OpenMS"
 
