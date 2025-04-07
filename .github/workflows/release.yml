@@ -94,7 +94,7 @@ jobs:
           path: public/backend/
 
       - name: Make backend binary executable (Linux/macOS)
-        if: runner.os != 'Windows'
+        if: ${{ runner.os != 'Windows' }}
         run: chmod +x public/backend/*
 
       - name: Debug: Check backend binary exists
