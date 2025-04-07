@@ -49,17 +49,23 @@ jobs:
       - name: Build Flask Binary
         shell: bash
         run: |
-          EXTRA_LIBS="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib"
           echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
+          EXTRA_LIBS="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib"
           
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
              echo "🛠️ Adding macOS-specific shared libraries"
+             export OPENMS_DATA_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/share/OpenMS"
              micromamba run -n backend pyinstaller --clean --log-level DEBUG \
                --onefile --name web_app web_app.py \
                --add-binary "$EXTRA_LIBS/libCbc.3.dylib:." \
                --add-binary "$EXTRA_LIBS/libOpenMS.dylib:." \
                --add-binary "$EXTRA_LIBS/libCoinUtils.3.dylib:." \
                --add-binary "$EXTRA_LIBS/libOsi.1.dylib:."
+          else
+             echo "🛠️ Standard build (no extra binaries)"
+             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
+               --onefile --name web_app web_app.py
+          fi
           
           mkdir -p backend-out
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
