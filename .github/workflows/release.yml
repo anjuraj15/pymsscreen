@@ -83,20 +83,17 @@ jobs:
         shell: bash  
         run: |
           echo "🛠️ Renaming backend binary for ${{ runner.os }}"
-          if [[ "${{ matrix.os }}" == "macOS" ]]; then
+          if [[ "$OS_ID" == "macos-latest" ]]; then
              mv public/backend/web_app_macos public/backend/web_app
              chmod +x public/backend/web_app
-          elif [[ "${{ matrix.os }}" == "Linux" ]]; then
+          elif [[ "$OS_ID" == "ubuntu-latest" ]]; then
              mv public/backend/web_app_linux public/backend/web_app
              chmod +x public/backend/web_app
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          elif [[ "$OS_ID" == "windows-latest" ]]; then
              mv public/backend/web_app.exe public/backend/web_app.exe
 
           fi
      
-      - name: Make backend executable
-        if: runner.os != 'Windows'
-        run: chmod +x public/backend/web_app
 
       - name: Cache node_modules
         uses: actions/cache@v4
