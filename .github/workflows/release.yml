@@ -28,10 +28,23 @@ jobs:
           cache-environment-key: env-${{ runner.os }}-${{ hashFiles('environment.core.yml') }}
           cache-downloads-key: pkgs-${{ runner.os }}-${{ hashFiles('environment.core.yml') }}
       
-      - name: Install pip-only dependencies + pyinstaller
-        run: |
-          micromamba run -n backend pip install -r requirements.txt
-          micromamba run -n backend pip install pyinstaller
+      - name: Install pip-only dependencies + pyinstaller + pyopenms
+	run: |
+	  micromamba run -n backend pip install -r requirements.txt
+	  micromamba run -n backend pip install pyinstaller
+
+	  #  Try platform-specific pyopenms installation
+	  if [[ "$RUNNER_OS" == "Linux" ]]; then
+	    echo " Installing pyopenms via conda for Linux..."
+	    micromamba install -n backend -c bioconda -c conda-forge pyopenms
+	  elif [[ "$RUNNER_OS" == "macOS" ]]; then
+	    echo " pyopenms not available on conda for macOS, trying pip..."
+	    micromamba run -n backend pip install pyopenms || echo "️ pip install failed"
+	  elif [[ "$RUNNER_OS" == "Windows" ]]; then
+	    echo "🪟 Attempting pyopenms install via pip on Windows..."
+	    micromamba run -n backend pip install pyopenms || echo "️ pip install failed"
+	  fi
+
 
       - name: Build Flask Backend Binary
         run: |

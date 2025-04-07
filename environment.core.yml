@@ -4,7 +4,6 @@ channels:
   - bioconda
 dependencies:
   - python
-  - pyopenms
   - rdkit
   - flask
   - pandas
