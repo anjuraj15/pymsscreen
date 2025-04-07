@@ -66,9 +66,10 @@ jobs:
 
       - name: Suppress micromamba cleanup error
         if: always()
+        shell: bash
         run: |
           echo "🧹 Cleaning micromamba shell (ignore if already deleted)"
-          rm -rf /Users/runner/work/_temp/setup-micromamba || echo "Already removed"
+          rm -rf /Users/runner/work/_temp/setup-micromamba/micromamba-shell || echo "Already removed"
 
   build-frontend:
     needs: build-backend
