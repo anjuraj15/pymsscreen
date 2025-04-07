@@ -26,52 +26,38 @@ jobs:
           init-shell: bash
           cache-environment: true
           cache-downloads: true
-          cache-environment-key: env-${{ runner.os }}-${{ hashFiles('environment.core.yml') }}
-          cache-downloads-key: pkgs-${{ runner.os }}-${{ hashFiles('environment.core.yml') }}
+          cache-environment-key: env-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
+          cache-downloads-key: pkgs-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
 
-      - name: Install pip-only dependencies + pyinstaller + pyopenms
+      - name: Install Python dependencies
         shell: bash
         run: |
           micromamba run -n backend pip install -r requirements.txt
           micromamba run -n backend pip install pyinstaller
-
           echo "🔍 Installing pyopenms per platform..."
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             micromamba install -n backend -c bioconda -c conda-forge pyopenms
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            micromamba run -n backend pip install pyopenms || echo "⚠️ pip install failed on macOS"
-          elif [[ "$RUNNER_OS" == "Windows" ]]; then
-            micromamba run -n backend pip install pyopenms || echo "⚠️ pip install failed on Windows"
+          else
+            micromamba run -n backend pip install pyopenms || echo "⚠️ pyopenms failed"
           fi
 
-      - name: Build Flask Backend Binary
+      - name: Build Flask Binary
         run: |
           micromamba run -n backend pyinstaller --clean --log-level DEBUG --onefile --name web_app web_app.py
           mkdir -p backend-out
-          echo "📦 Backend build output (dist/):"
-          ls -la dist/
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             mv dist/web_app backend-out/web_app_linux
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             mv dist/web_app backend-out/web_app_macos
-          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             mv dist/web_app.exe backend-out/web_app.exe
           fi
-          echo "📂 Backend-out folder contents:"
-          ls -la backend-out/
 
       - name: Upload Backend Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: web_app_binary_${{ runner.os }}
+          name: web_app_binary_${{ matrix.os }}
           path: backend-out/
-
-      - name: Suppress Micromamba Cleanup Error
-        if: always()
-        shell: bash
-        run: |
-          echo "🧹 Cleaning micromamba shell manually..."
-          rm -f /Users/runner/work/_temp/setup-micromamba/micromamba-shell || true
 
   build-frontend:
     needs: build-backend
@@ -79,55 +65,67 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         arch: [x64]
-
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Download Backend Binary
         uses: actions/download-artifact@v4
         with:
-          name: web_app_binary_${{ runner.os }}
+          name: web_app_binary_${{ matrix.os }}
           path: public/backend/
 
-      - name: Make backend binary executable (Linux/macOS)
-        if: ${{ runner.os != 'Windows' }}
-        run: chmod +x public/backend/*
-
-      - name: Debug Check backend binary exists
+      - name: Rename backend binary to standard name
         run: |
-          echo "📂 Listing public/backend"
-          ls -la public/backend || echo "❌ No backend binary found!"
-          file public/backend/* || echo "⚠️ Cannot determine file type"
+          echo "🛠️ Renaming backend binary for ${{ runner.os }}"
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            mv public/backend/web_app_macos public/backend/web_app
+          elif [[ "${{ runner.os }}" == "Linux" ]]; then
+            mv public/backend/web_app_linux public/backend/web_app
+          else
+            # Windows — already correct
+            echo "ℹ️ Windows binary already named correctly"
+          fi
+
+      - name: Make backend executable
+        if: runner.os != 'Windows'
+        run: chmod +x public/backend/web_app
 
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          key: ${{ matrix.os }}-node-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-
+            ${{ matrix.os }}-node-
 
-      - name: Install Dependencies
+      - name: Install Frontend Dependencies
         run: npm ci
+
+      - name: Install Playwright (required for tests)
+        run: npx playwright install --with-deps
 
       - name: Build React App
         run: npm run build
 
-      - name: Debug: Check dist folder
+      - name: Verify Backend Binary for Packaging
         run: |
-          echo "📂 Listing dist/"
-          ls -la dist || echo "⚠️ dist/ not found"
+          echo "📦 Backend binary:"
+          ls -la public/backend
+          file public/backend/web_app* || echo "⚠️ Could not determine binary type"
+
+      - name: Run Playwright Test (backend readiness)
+        run: npm run test:playwright
 
       - name: Build Electron App
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload Build Artifact
+      - name: Upload App Bundle
         uses: actions/upload-artifact@v4
         with:
           name: pyms-${{ matrix.os }}-${{ matrix.arch }}

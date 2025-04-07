@@ -31,11 +31,13 @@
       },
       {
         "from": "public/backend/web_app_linux",
-        "to": "backend/web_app_linux"
+        "to": "backend/web_app_linux",
+        "executable": true
       },
       {
         "from": "public/backend/web_app_macos",
-        "to": "backend/web_app_macos"
+        "to": "backend/web_app_macos",
+        "executable": true
       }
     ],
     "directories": {

@@ -1,96 +1,93 @@
-const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const { app, BrowserWindow } = require('electron');
 const { spawn } = require('child_process');
-const os = require('os');
-const http = require('http');
 
-let flaskProcess;
+let backendProcess;
 
-function getBackendBinaryPath() {
+function getBackendBinary() {
   const isDev = !app.isPackaged;
-  const backendBasePath = isDev
-    ? path.join(__dirname, 'public', 'backend')
+  const platform = process.platform; // 'darwin', 'linux', 'win32'
+
+  const baseDir = isDev
+    ? path.join(__dirname, '..', 'public', 'backend')
     : path.join(process.resourcesPath, 'backend');
 
-  switch (os.platform()) {
-    case 'win32':
-      return path.join(backendBasePath, 'web_app.exe');
-    case 'darwin':
-      return path.join(backendBasePath, 'web_app_macos');
-    case 'linux':
-      return path.join(backendBasePath, 'web_app_linux');
-    default:
-      throw new Error(`Unsupported platform: ${os.platform()}`);
-  }
+  const binaryMap = {
+    win32: 'web_app.exe',
+    darwin: 'web_app_macos',
+    linux: 'web_app_linux'
+  };
+
+  return path.join(baseDir, binaryMap[platform] || 'web_app');
 }
 
 function startBackend() {
-  const binaryPath = getBackendBinaryPath();
+  const backendPath = getBackendBinary();
 
-  flaskProcess = spawn(binaryPath, [], {
-    detached: true,
-    stdio: 'ignore',
+  backendProcess = spawn(backendPath, [], {
+    stdio: 'inherit',
+    detached: false
   });
 
-  flaskProcess.unref();
-}
+  backendProcess.on('error', (err) => {
+    console.error('❌ Failed to start backend:', err.message);
+  });
 
-function waitForBackend(url, tries = 20, delay = 500) {
-  return new Promise((resolve, reject) => {
-    const tryRequest = (attempt = 0) => {
-      http.get(url, res => {
-        if (res.statusCode === 200) {
-          resolve();
-        } else {
-          retry(attempt);
-        }
-      }).on('error', () => retry(attempt));
-    };
-
-    const retry = (attempt) => {
-      if (attempt >= tries) {
-        reject(new Error('Backend did not start in time'));
-      } else {
-        setTimeout(() => tryRequest(attempt + 1), delay);
-      }
-    };
-
-    tryRequest();
+  backendProcess.on('exit', (code, signal) => {
+    console.log(`⚠️ Backend exited. Code: ${code}, Signal: ${signal}`);
   });
 }
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1024,
-    height: 768,
+    width: 1200,
+    height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
+      nodeIntegration: false,
+      contextIsolation: true
+    }
   });
 
-  win.loadURL('http://localhost:5000');
+  const indexPath = app.isPackaged
+    ? `file://${path.join(__dirname, '../dist/index.html')}`
+    : 'http://localhost:5173'; // adjust if you're using a different Vite port
+
+  win.loadURL(indexPath);
 }
+
+
+const http = require('http');
+
+function waitForBackend(retries = 20) {
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      http.get('http://localhost:5000', (res) => {
+        if (res.statusCode === 200) resolve();
+        else retry();
+      }).on('error', retry);
+    };
+    const retry = () => {
+      if (--retries === 0) return reject(new Error('Backend did not start'));
+      setTimeout(check, 1000);
+    };
+    check();
+  });
+}
+
+
 
 app.whenReady().then(() => {
   startBackend();
-
-  waitForBackend('http://localhost:5000')
-    .then(() => {
-      createWindow();
-    })
-    .catch(err => {
-      console.error('❌ Backend failed to start:', err.message);
-      app.quit();
-    });
+  createWindow();
 });
 
-app.on('before-quit', () => {
-  if (flaskProcess) {
-    try {
-      process.kill(-flaskProcess.pid); // Clean up
-    } catch (e) {
-      console.warn('⚠️  Could not kill backend process:', e.message);
-    }
+app.on('window-all-closed', () => {
+  if (backendProcess) backendProcess.kill();
+  if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
   }
 });
-
