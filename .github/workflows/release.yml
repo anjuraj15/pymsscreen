@@ -63,11 +63,14 @@ jobs:
              echo "🛠️ Adding macOS-specific shared libraries"
              export OPENMS_DATA_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/share/OpenMS"
              micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-               --onefile --name web_app web_app.py \
-               --add-binary "$EXTRA_LIBS/libCbc.3.dylib:." \
-               --add-binary "$EXTRA_LIBS/libOpenMS.dylib:." \
-               --add-binary "$EXTRA_LIBS/libCoinUtils.3.dylib:." \
-               --add-binary "$EXTRA_LIBS/libOsi.1.dylib:."
+              --onefile --name web_app web_app.py \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libCbc.3.dylib:." \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libOpenMS.dylib:." \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libCoinUtils.3.dylib:." \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libOsi.1.dylib:." \
+              --add-binary "$EXTRA_LIBS/python3.12/site-packages/pyopenms/libOpenSwathAlgo.dylib:." \
+              --add-data "$EXTRA_LIBS/python3.12/site-packages/pyopenms/share/OpenMS:share/OpenMS"
+
           else
              echo "🛠️ Standard build (no extra binaries)"
              micromamba run -n backend pyinstaller --clean --log-level DEBUG \
