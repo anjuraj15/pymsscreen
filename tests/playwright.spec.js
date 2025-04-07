@@ -10,10 +10,17 @@ const __dirname = path.dirname(__filename);
 
 let backendProcess;
 
-const backendPath = path.resolve(
-  __dirname,
-  '../public/backend/web_app' + (process.platform === 'win32' ? '.exe' : '')
-);
+function getBackendBinaryPath() {
+  const baseDir = path.resolve(__dirname, '../public/backend');
+  const platform = process.platform;
+
+  if (platform === 'darwin') return path.join(baseDir, 'web_app_macos');
+  if (platform === 'linux') return path.join(baseDir, 'web_app_linux');
+  if (platform === 'win32') return path.join(baseDir, 'web_app.exe');
+  throw new Error(`Unsupported platform: ${platform}`);
+}
+
+const backendPath = getBackendBinaryPath();
 
 test.beforeAll(async () => {
   if (!fs.existsSync(backendPath)) {
@@ -27,10 +34,6 @@ test.beforeAll(async () => {
     shell: false,
   });
 
-  // Option 1: Wait fixed time (simple but brittle)
-  // await new Promise((resolve) => setTimeout(resolve, 5000));
-
-  // ✅ Option 2: Wait until port is actually live (recommended)
   await waitOn({
     resources: ['http://localhost:5000'],
     timeout: 15000,
@@ -49,5 +52,5 @@ test.afterAll(() => {
 
 test('Set working dir, save state, and confirm backend responds', async ({ page }) => {
   await page.goto('http://localhost:5000');
-  await expect(page).toHaveTitle(/Flask|Your App/i); // Customize based on your app’s title
+  await expect(page).toHaveTitle(/Flask|Your App/i);
 });
