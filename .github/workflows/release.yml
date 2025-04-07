@@ -27,24 +27,24 @@ jobs:
           cache-downloads: true
           cache-environment-key: env-${{ runner.os }}-${{ hashFiles('environment.core.yml') }}
           cache-downloads-key: pkgs-${{ runner.os }}-${{ hashFiles('environment.core.yml') }}
-      
+
       - name: Install pip-only dependencies + pyinstaller + pyopenms
-	run: |
-	  micromamba run -n backend pip install -r requirements.txt
-	  micromamba run -n backend pip install pyinstaller
+        shell: bash
+        run: |
+          micromamba run -n backend pip install -r requirements.txt
+          micromamba run -n backend pip install pyinstaller
 
-	  #  Try platform-specific pyopenms installation
-	  if [[ "$RUNNER_OS" == "Linux" ]]; then
-	    echo " Installing pyopenms via conda for Linux..."
-	    micromamba install -n backend -c bioconda -c conda-forge pyopenms
-	  elif [[ "$RUNNER_OS" == "macOS" ]]; then
-	    echo " pyopenms not available on conda for macOS, trying pip..."
-	    micromamba run -n backend pip install pyopenms || echo "️ pip install failed"
-	  elif [[ "$RUNNER_OS" == "Windows" ]]; then
-	    echo "🪟 Attempting pyopenms install via pip on Windows..."
-	    micromamba run -n backend pip install pyopenms || echo "️ pip install failed"
-	  fi
-
+          echo "🔍 Installing pyopenms per platform..."
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            echo "🧬 Installing pyopenms via conda for Linux..."
+            micromamba install -n backend -c bioconda -c conda-forge pyopenms
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "🍎 Trying pip install of pyopenms on macOS..."
+            micromamba run -n backend pip install pyopenms || echo "⚠️ pip install failed"
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "🪟 Trying pip install of pyopenms on Windows..."
+            micromamba run -n backend pip install pyopenms || echo "⚠️ pip install failed"
+          fi
 
       - name: Build Flask Backend Binary
         run: |
@@ -112,16 +112,18 @@ jobs:
 
       - name: Install Frontend Dependencies
         run: npm ci
+        working-directory: electron-app
 
       - name: Build React App
         run: npm run build
+        working-directory: electron-app
 
       - name: Debug App Folder
         run: |
           echo "📂 Listing dist/"
-          ls -la dist || echo "⚠️ dist/ not found yet"
+          ls -la electron-app/dist || echo "⚠️ dist/ not found yet"
           echo "📂 Listing public/backend/"
-          ls -la public/backend || echo "⚠️ backend/ not found"
+          ls -la electron-app/public/backend || echo "⚠️ backend/ not found"
           echo "📂 Current directory:"
           pwd
 
@@ -129,30 +131,33 @@ jobs:
         run: |
           npm install --save-dev playwright @playwright/test
           npx playwright install chromium
-        shell: bash
+        working-directory: electron-app
 
       - name: Install Playwright Browser Deps (Linux only)
         if: runner.os == 'Linux'
         run: npx playwright install-deps
+        working-directory: electron-app
 
       - name: Run Playwright Tests
         run: npm run test:playwright
         env:
           CI: true
+        working-directory: electron-app
 
       - name: Build Electron App
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+        working-directory: electron-app
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: pyms-${{ matrix.os }}-${{ matrix.arch }}
           path: |
-            dist/
-            release/
-            out/
-            *.exe
-            *.AppImage
-            *.dmg
+            electron-app/dist/
+            electron-app/release/
+            electron-app/out/
+            electron-app/*.exe
+            electron-app/*.AppImage
+            electron-app/*.dmg
