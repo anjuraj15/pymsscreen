@@ -1,93 +1,83 @@
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { app, BrowserWindow } = require('electron');
 const { spawn } = require('child_process');
+const os = require('os');
+const fs = require('fs');
 
-let backendProcess;
+let flaskProcess;
 
-function getBackendBinary() {
-  const isDev = !app.isPackaged;
-  const platform = process.platform; // 'darwin', 'linux', 'win32'
-
-  const baseDir = isDev
-    ? path.join(__dirname, '..', 'public', 'backend')
-    : path.join(process.resourcesPath, 'backend');
-
-  const binaryMap = {
+function getBackendBinaryPath() {
+  const platform = os.platform();
+  const binaryName = {
     win32: 'web_app.exe',
     darwin: 'web_app_macos',
-    linux: 'web_app_linux'
-  };
+    linux: 'web_app_linux',
+  }[platform];
 
-  return path.join(baseDir, binaryMap[platform] || 'web_app');
+  const isProd = app.isPackaged;
+  const binaryPath = isProd
+    ? path.join(process.resourcesPath, 'backend', binaryName)
+    : path.join(__dirname, '..', 'public', 'backend', binaryName);
+
+  return binaryPath;
 }
 
-function startBackend() {
-  const backendPath = getBackendBinary();
+function startFlask() {
+  const backendPath = getBackendBinaryPath();
+  const shell = os.platform() === 'win32' || os.platform() === 'darwin';
 
-  backendProcess = spawn(backendPath, [], {
-    stdio: 'inherit',
-    detached: false
-  });
+  // Optional: log output to file (especially useful on macOS)
+  const logDir = app.getPath('userData');
+  const logFile = path.join(logDir, 'flask-backend.log');
+  const out = fs.openSync(logFile, 'a');
+  const err = fs.openSync(logFile, 'a');
 
-  backendProcess.on('error', (err) => {
-    console.error('❌ Failed to start backend:', err.message);
-  });
+  console.log(`[Electron] Starting backend from: ${backendPath}`);
 
-  backendProcess.on('exit', (code, signal) => {
-    console.log(`⚠️ Backend exited. Code: ${code}, Signal: ${signal}`);
-  });
+  try {
+    flaskProcess = spawn(backendPath, [], {
+      shell,
+      detached: true,
+      stdio: ['ignore', out, err],
+    });
+
+    flaskProcess.unref();
+  } catch (e) {
+    console.error(`[Electron] Failed to spawn backend: ${e}`);
+  }
 }
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1280,
+    height: 900,
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true
-    }
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+    },
   });
 
-  const indexPath = app.isPackaged
-    ? `file://${path.join(__dirname, '../dist/index.html')}`
-    : 'http://localhost:5173'; // adjust if you're using a different Vite port
-
-  win.loadURL(indexPath);
+  win.loadFile(path.join(__dirname, '../dist/index.html'));
+  // win.webContents.openDevTools(); // optional for debug
 }
 
-
-const http = require('http');
-
-function waitForBackend(retries = 20) {
-  return new Promise((resolve, reject) => {
-    const check = () => {
-      http.get('http://localhost:5000', (res) => {
-        if (res.statusCode === 200) resolve();
-        else retry();
-      }).on('error', retry);
-    };
-    const retry = () => {
-      if (--retries === 0) return reject(new Error('Backend did not start'));
-      setTimeout(check, 1000);
-    };
-    check();
+ipcMain.handle('select-directory', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
   });
-}
-
-
+  return result.canceled ? null : result.filePaths[0];
+});
 
 app.whenReady().then(() => {
-  startBackend();
+  startFlask();
   createWindow();
 });
 
 app.on('window-all-closed', () => {
-  if (backendProcess) backendProcess.kill();
+  if (flaskProcess) flaskProcess.kill();
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+app.on('before-quit', () => {
+  if (flaskProcess) flaskProcess.kill();
 });
