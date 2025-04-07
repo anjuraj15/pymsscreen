@@ -49,7 +49,7 @@ jobs:
       - name: Build Flask Binary
         shell: bash
         run: |
-          EXTRA_LIBS=$(micromamba info --base-env-prefix)/envs/backend/lib
+          EXTRA_LIBS=EXTRA_LIBS="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib"
           echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
           
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
