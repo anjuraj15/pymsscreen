@@ -1,5 +1,5 @@
 {
-  "name": "pyms-react",
+  "name": "pymsscreen",
   "private": true,
   "version": "0.0.0",
   "description": "PyMSscreen: A cross-platform Electron app with Flask backend",
@@ -13,9 +13,9 @@
     "preview": "vite preview",
     "electron": "electron .",
     "build:electron": "electron-builder --publish never",
-    "test:playwright": "npx playwright test tests/playwright.spec.js",
     "build:electron:x64": "electron-builder --linux AppImage --x64 --publish never",
-    "build:electron:arm64": "electron-builder --linux AppImage --arm64 --publish never"
+    "build:electron:arm64": "electron-builder --linux AppImage --arm64 --publish never",
+    "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {
     "appId": "com.pymsscreen",
@@ -26,31 +26,40 @@
     ],
     "extraFiles": [
       {
-        "from": "public/backend/web_app.exe",
-        "to": "backend/web_app.exe"
-      },
-      {
-        "from": "public/backend/web_app_linux",
-        "to": "backend/web_app_linux",
-        "executable": true
-      },
-      {
-        "from": "public/backend/web_app_macos",
-        "to": "backend/web_app_macos",
-        "executable": true
+        "from": "public/backend",
+        "to": "backend",
+        "filter": ["web_app*"]
       }
     ],
     "directories": {
       "buildResources": "electron/icons"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "extraFiles": [
+        {
+          "from": "public/backend/web_app.exe",
+          "to": "backend/web_app.exe"
+        }
+      ]
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "extraFiles": [
+        {
+          "from": "public/backend/web_app_macos",
+          "to": "backend/web_app"
+        }
+      ]
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "extraFiles": [
+        {
+          "from": "public/backend/web_app_linux",
+          "to": "backend/web_app"
+        }
+      ]
     }
   },
   "dependencies": {

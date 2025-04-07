@@ -1,56 +1,52 @@
 import { test, expect } from '@playwright/test';
-import { spawn } from 'child_process';
-import path from 'path';
 import fs from 'fs';
-import waitOn from 'wait-on';
-import { fileURLToPath } from 'url';
+import path from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// You can change this if your backend is using a different working path
+const WORKING_DIR = '/tmp/test_project';
+const BACKEND_URL = 'http://localhost:5000';
 
-let backendProcess;
+test.describe('State Management API', () => {
+  test.beforeAll(() => {
+    if (!fs.existsSync(WORKING_DIR)) {
+      fs.mkdirSync(WORKING_DIR, { recursive: true });
+      console.log(`📁 Created test working directory at: ${WORKING_DIR}`);
+    }
 
-function getBackendBinaryPath() {
-  const baseDir = path.resolve(__dirname, '../public/backend');
-  const platform = process.platform;
-
-  if (platform === 'darwin') return path.join(baseDir, 'web_app_macos');
-  if (platform === 'linux') return path.join(baseDir, 'web_app_linux');
-  if (platform === 'win32') return path.join(baseDir, 'web_app.exe');
-  throw new Error(`Unsupported platform: ${platform}`);
-}
-
-const backendPath = getBackendBinaryPath();
-
-test.beforeAll(async () => {
-  if (!fs.existsSync(backendPath)) {
-    console.error("Available files:", fs.readdirSync(path.dirname(backendPath)));
-    throw new Error(`❌ Backend binary not found: ${backendPath}`);
-  }
-
-  console.log(`🚀 Launching backend from: ${backendPath}`);
-  backendProcess = spawn(backendPath, [], {
-    stdio: 'inherit',
-    shell: false,
+    // Optional: create a dummy compound CSV if your backend depends on it
+    const dummyCSVPath = path.join(WORKING_DIR, 'compounds.csv');
+    if (!fs.existsSync(dummyCSVPath)) {
+      fs.writeFileSync(dummyCSVPath, 'ID,SMILES,Name\n1,CCO,Ethanol\n');
+    }
   });
 
-  await waitOn({
-    resources: ['http://localhost:5000'],
-    timeout: 15000,
-    interval: 500,
-    window: 1000,
-    validateStatus: (status) => status >= 200 && status < 500,
+  test('should save state.json correctly', async ({ request }) => {
+    const response = await request.post(`${BACKEND_URL}/save_state`, {
+      data: {
+        working_directory: WORKING_DIR,
+        compound_csv: 'compounds.csv',
+        mzml_files: [
+          {
+            file: 'sample.mzML',
+            tag: 'SampleTag',
+            adduct: '[M+H]+'
+          }
+        ]
+      }
+    });
+
+    expect(response.ok()).toBeTruthy();
+
+    const body = await response.json();
+    expect(body.message).toContain('State saved');
+
+    const statePath = path.join(WORKING_DIR, 'state.json');
+    expect(fs.existsSync(statePath)).toBeTruthy();
+
+    const contents = fs.readFileSync(statePath, 'utf-8');
+    const state = JSON.parse(contents);
+
+    expect(state.working_directory).toBe(WORKING_DIR);
+    expect(state.mzml_files[0].adduct).toBe('[M+H]+');
   });
-});
-
-test.afterAll(() => {
-  if (backendProcess) {
-    console.log('🛑 Stopping backend process');
-    backendProcess.kill();
-  }
-});
-
-test('Set working dir, save state, and confirm backend responds', async ({ page }) => {
-  await page.goto('http://localhost:5000');
-  await expect(page).toHaveTitle(/Flask|Your App/i);
 });
