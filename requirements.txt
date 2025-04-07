@@ -24,3 +24,4 @@ kiwisolver
 pyparsing
 packaging
 requests-file
+flask-cors  
