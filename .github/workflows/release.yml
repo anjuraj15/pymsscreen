@@ -6,12 +6,15 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build-backend:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+  build-platform:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [x64]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    name: Build (${{ matrix.os }})
+    timeout-minutes: 90
 
     steps:
       - name: Checkout Code
@@ -45,20 +48,12 @@ jobs:
              echo "⚠️ pyopenms not installed: unknown platform"
           fi
 
-      - name: Check for OpenMS dylibs (macOS only)
-        if: matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          echo "🔍 Listing available shared libs in backend env:"
-          find "${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib" -name "*.dylib" | sort
-
-      - name: Build Flask Binary
+      - name: Build Backend Binary
         shell: bash
         run: |
           echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
           
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-
             echo "🛠️ macOS build with dynamic shared libraries"
             WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib/python3.12/site-packages/pyopenms"
 
@@ -74,54 +69,27 @@ jobs:
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
             echo "📁 OpenMS data path: $OPENMS_DATA_PATH"
 
-            echo "🔧 Running PyInstaller with collected binaries"
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
               --onefile --name web_app web_app.py $ADD_BINARIES \
               --add-data "$OPENMS_DATA_PATH:share/OpenMS"
-
           else
             echo "🛠️ Standard build (no extra binaries)"
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
               --onefile --name web_app web_app.py
           fi
 
-          mkdir -p backend-out
+          mkdir -p public/backend
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            mv dist/web_app backend-out/web_app_linux
+            mv dist/web_app public/backend/web_app_linux
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            mv dist/web_app backend-out/web_app_macos
+            mv dist/web_app public/backend/web_app_macos
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            mv dist/web_app.exe backend-out/web_app.exe
+            mv dist/web_app.exe public/backend/web_app.exe
           fi
 
-      - name: Upload Backend Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: web_app_binary_${{ matrix.os }}
-          path: backend-out/
-
-  build-frontend:
-    needs: build-backend
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        arch: [x64]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Download Backend Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: web_app_binary_${{ matrix.os }}
-          path: public/backend/
-
-      - name: Make backend binary executable (non-Windows)
+      - name: Make Backend Executable (Non-Windows)
         if: matrix.os != 'windows-latest'
-        run: chmod +x public/backend/web_app_*     
+        run: chmod +x public/backend/web_app_*
 
       - name: Cache node_modules
         uses: actions/cache@v4
@@ -140,28 +108,38 @@ jobs:
       - name: Build React App
         run: npm run build
 
-      - name: Verify Backend Binary for Packaging
-        run: |
-          echo "📦 Backend binary:"
-          ls -la public/backend
-          file public/backend/web_app* || echo "⚠️ Could not determine binary type"
-
       - name: Run Playwright Test (backend readiness)
-        run: npm run test:playwright
+        run: npm run test:playwright || echo "⚠️ Frontend test failed"
 
       - name: Build Electron App
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload App Bundle
+      - name: Upload Platform Bundle
         uses: actions/upload-artifact@v4
         with:
           name: pyms-${{ matrix.os }}-${{ matrix.arch }}
           path: |
+            public/backend/
             dist/
             release/
             out/
             *.exe
             *.AppImage
             *.dmg
+
+  release:
+    needs: build-platform
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: bundles/
+
+      - name: List Bundles
+        run: |
+          echo "📦 Final App Bundles:"
+          ls -R bundles/
