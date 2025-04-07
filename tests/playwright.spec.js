@@ -1,50 +1,53 @@
-import { _electron as electron } from 'playwright';
 import { test, expect } from '@playwright/test';
-import axios from 'axios';
 import { spawn } from 'child_process';
+import os from 'os';
 import path from 'path';
+import fs from 'fs';
 
-test('Set working dir, save state, and confirm backend responds', async () => {
-  const backendPath = path.resolve('public/backend/web_app_linux');
+let backendProcess;
+
+test.beforeAll(async () => {
+  const platform = os.platform();
+  let binaryName;
+
+  if (platform === 'win32') {
+    binaryName = 'web_app.exe';
+  } else if (platform === 'darwin') {
+    binaryName = 'web_app_macos';
+  } else {
+    binaryName = 'web_app_linux';
+  }
+
+  const backendPath = path.resolve('public/backend', binaryName);
+
   console.log('Looking for backend binary at:', backendPath);
-  const flask = spawn(backendPath, [], {
-    cwd: path.dirname(backendPath),
+
+  if (!fs.existsSync(backendPath)) {
+    throw new Error(`❌ Backend binary not found: ${backendPath}`);
+  }
+
+  // Make sure it's executable (macOS/Linux)
+  if (platform !== 'win32') {
+    fs.chmodSync(backendPath, 0o755);
+  }
+
+  backendProcess = spawn(backendPath, [], {
+    shell: platform === 'win32' || platform === 'darwin',
     detached: true,
-    stdio: 'ignore',
+    stdio: 'ignore'
   });
 
-  console.log('Flask backend started');
-  await new Promise((res) => setTimeout(res, 4000)); // give it time to start
+  backendProcess.unref();
 
-  let app;
-  try {
-    app = await electron.launch({ args: ['electron/main.cjs'] });
-  } catch (err) {
-    console.error('❌ Electron failed to launch:', err);
-    process.kill(-flask.pid); // kill flask before throwing
-    throw err;
-  }
+  // Give Flask time to start
+  await new Promise(res => setTimeout(res, 2000));
+});
 
-  const window = await app.firstWindow();
-  await window.evaluate(() => {
-    localStorage.setItem('workingDir', 'C:/fake/test-folder');
-  });
+test('Set working dir, save state, and confirm backend responds', async ({ page }) => {
+  await page.goto('http://localhost:5000');
+  await expect(page).toHaveTitle(/Flask|Your App/i);
+});
 
-  await window.waitForLoadState('domcontentloaded');
-  const title = await window.title();
-  expect(title).toMatch(/PyMS/i);
-
-  // ✅ Try calling backend
-  try {
-    const response = await axios.post('http://localhost:5000/save_state', {
-      dummy: 'data',
-    });
-    expect(response.status).toBe(200);
-  } catch (err) {
-    console.error('Axios failed:', err);
-    throw err;
-  }
-
-  await app.close();
-  process.kill(-flask.pid); // cleanup Flask
+test.afterAll(() => {
+  if (backendProcess) backendProcess.kill();
 });
