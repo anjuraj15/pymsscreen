@@ -115,11 +115,9 @@ jobs:
 
       - name: Install Frontend Dependencies
         run: npm ci
-        working-directory: electron-app
 
       - name: Build React App
         run: npm run build
-        working-directory: electron-app
 
       - name: Debug App Folder
         run: |
@@ -134,24 +132,20 @@ jobs:
         run: |
           npm install --save-dev playwright @playwright/test
           npx playwright install chromium
-        working-directory: electron-app
 
       - name: Install Playwright Browser Deps (Linux only)
         if: runner.os == 'Linux'
         run: npx playwright install-deps
-        working-directory: electron-app
 
       - name: Run Playwright Tests
         run: npm run test:playwright
         env:
           CI: true
-        working-directory: electron-app
 
       - name: Build Electron App
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        working-directory: electron-app
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
