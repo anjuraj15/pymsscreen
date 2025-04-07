@@ -45,6 +45,13 @@ jobs:
           else
              echo "⚠️ pyopenms not installed: unknown platform"
           fi
+      
+      - name: Check for OpenMS dylibs (macOS only)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          echo "🔍 Listing available shared libs in backend env:"
+          find "${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib" -name "*.dylib" | sort
 
       - name: Build Flask Binary
         shell: bash
