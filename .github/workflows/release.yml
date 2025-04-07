@@ -37,9 +37,13 @@ jobs:
           micromamba run -n backend pip install pyinstaller
           echo "🔍 Installing pyopenms per platform..."
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            micromamba install -n backend -c bioconda -c conda-forge pyopenms
+             micromamba install -n backend -c bioconda -c conda-forge pyopenms
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl             
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-macosx_14_0_arm64.whl
           else
-            micromamba run -n backend pip install pyopenms || echo "⚠️ pyopenms failed"
+             echo "⚠️ pyopenms not installed: unknown platform"
           fi
 
       - name: Build Flask Binary
