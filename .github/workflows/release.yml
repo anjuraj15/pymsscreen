@@ -97,7 +97,7 @@ jobs:
         if: ${{ runner.os != 'Windows' }}
         run: chmod +x public/backend/*
 
-      - name: Debug: Check backend binary exists
+      - name: Debug Check backend binary exists
         run: |
           echo "📂 Listing public/backend"
           ls -la public/backend || echo "❌ No backend binary found!"
