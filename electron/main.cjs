@@ -1,85 +1,96 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const os = require('os');
+const http = require('http');
 
 let flaskProcess;
 
+function getBackendBinaryPath() {
+  const isDev = !app.isPackaged;
+  const backendBasePath = isDev
+    ? path.join(__dirname, 'public', 'backend')
+    : path.join(process.resourcesPath, 'backend');
+
+  switch (os.platform()) {
+    case 'win32':
+      return path.join(backendBasePath, 'web_app.exe');
+    case 'darwin':
+      return path.join(backendBasePath, 'web_app_macos');
+    case 'linux':
+      return path.join(backendBasePath, 'web_app_linux');
+    default:
+      throw new Error(`Unsupported platform: ${os.platform()}`);
+  }
+}
+
+function startBackend() {
+  const binaryPath = getBackendBinaryPath();
+
+  flaskProcess = spawn(binaryPath, [], {
+    detached: true,
+    stdio: 'ignore',
+  });
+
+  flaskProcess.unref();
+}
+
+function waitForBackend(url, tries = 20, delay = 500) {
+  return new Promise((resolve, reject) => {
+    const tryRequest = (attempt = 0) => {
+      http.get(url, res => {
+        if (res.statusCode === 200) {
+          resolve();
+        } else {
+          retry(attempt);
+        }
+      }).on('error', () => retry(attempt));
+    };
+
+    const retry = (attempt) => {
+      if (attempt >= tries) {
+        reject(new Error('Backend did not start in time'));
+      } else {
+        setTimeout(() => tryRequest(attempt + 1), delay);
+      }
+    };
+
+    tryRequest();
+  });
+}
+
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1280,
-    height: 900,
+    width: 1024,
+    height: 768,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: false,
-      contextIsolation: true
-    }
+    },
   });
 
-  win.loadFile(path.join(__dirname, '../dist/index.html'));
-  win.webContents.openDevTools();
+  win.loadURL('http://localhost:5000');
 }
-
-function getBackendBinaryPath() {
-  const platform = process.platform;
-  const isProd = app.isPackaged;
-
-  const binaryName = {
-    win32: 'web_app.exe',
-    darwin: 'web_app_macos',
-    linux: 'web_app_linux'
-  }[platform];
-
-  if (!binaryName) {
-    throw new Error(`Unsupported platform: ${platform}`);
-  }
-
-  return isProd
-    ? path.join(process.resourcesPath, 'backend', binaryName)
-    : path.join(__dirname, '..', 'public', 'backend', binaryName);
-}
-
-function startFlask() {
-  const exePath = getBackendBinaryPath();
-
-  flaskProcess = spawn(exePath, [], {
-    shell: process.platform === 'win32', // Only use shell on Windows
-    stdio: 'pipe'
-  });
-
-  flaskProcess.stdout.on('data', (data) => {
-    console.log(`[Flask] ${data}`);
-  });
-
-  flaskProcess.stderr.on('data', (data) => {
-    console.error(`[Flask Error] ${data}`);
-  });
-
-  flaskProcess.on('error', (err) => {
-    console.error(`[Flask Failed to Start] ${err}`);
-  });
-
-  flaskProcess.on('exit', (code) => {
-    console.log(`[Flask Exited] Code: ${code}`);
-  });
-}
-
-ipcMain.handle('select-directory', async () => {
-  const result = await dialog.showOpenDialog({
-    properties: ['openDirectory']
-  });
-  return result.canceled ? null : result.filePaths[0];
-});
 
 app.whenReady().then(() => {
-  startFlask();
-  createWindow();
-});
+  startBackend();
 
-app.on('window-all-closed', () => {
-  if (flaskProcess) flaskProcess.kill();
-  if (process.platform !== 'darwin') app.quit();
+  waitForBackend('http://localhost:5000')
+    .then(() => {
+      createWindow();
+    })
+    .catch(err => {
+      console.error('❌ Backend failed to start:', err.message);
+      app.quit();
+    });
 });
 
 app.on('before-quit', () => {
-  if (flaskProcess) flaskProcess.kill();
+  if (flaskProcess) {
+    try {
+      process.kill(-flaskProcess.pid); // Clean up
+    } catch (e) {
+      console.warn('⚠️  Could not kill backend process:', e.message);
+    }
+  }
 });
+
