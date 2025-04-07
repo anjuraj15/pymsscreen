@@ -80,17 +80,17 @@ jobs:
           path: public/backend/
 
       - name: Rename backend binary to standard name
+        shell: bash  
         run: |
           echo "🛠️ Renaming backend binary for ${{ runner.os }}"
           if [[ "${{ runner.os }}" == "macOS" ]]; then
-            mv public/backend/web_app_macos public/backend/web_app
+             mv public/backend/web_app_macos public/backend/web_app
           elif [[ "${{ runner.os }}" == "Linux" ]]; then
-            mv public/backend/web_app_linux public/backend/web_app
+             mv public/backend/web_app_linux public/backend/web_app
           else
-            # Windows — already correct
-            echo "ℹ️ Windows binary already named correctly"
+             echo "ℹ️ Windows binary already correctly named"
           fi
-
+     
       - name: Make backend executable
         if: runner.os != 'Windows'
         run: chmod +x public/backend/web_app
