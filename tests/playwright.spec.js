@@ -1,53 +1,49 @@
 import { test, expect } from '@playwright/test';
 import { spawn } from 'child_process';
-import os from 'os';
 import path from 'path';
 import fs from 'fs';
+import waitOn from 'wait-on';
 
 let backendProcess;
 
+const backendPath = path.resolve(
+  __dirname,
+  '../public/backend/web_app' + (process.platform === 'win32' ? '.exe' : '')
+);
+
 test.beforeAll(async () => {
-  const platform = os.platform();
-  let binaryName;
-
-  if (platform === 'win32') {
-    binaryName = 'web_app.exe';
-  } else if (platform === 'darwin') {
-    binaryName = 'web_app_macos';
-  } else {
-    binaryName = 'web_app_linux';
-  }
-
-  const backendPath = path.resolve('public/backend', binaryName);
-
-  console.log('Looking for backend binary at:', backendPath);
-
   if (!fs.existsSync(backendPath)) {
+    console.error("Available files:", fs.readdirSync(path.dirname(backendPath)));
     throw new Error(`❌ Backend binary not found: ${backendPath}`);
   }
 
-  // Make sure it's executable (macOS/Linux)
-  if (platform !== 'win32') {
-    fs.chmodSync(backendPath, 0o755);
-  }
-
+  console.log(`🚀 Launching backend from: ${backendPath}`);
   backendProcess = spawn(backendPath, [], {
-    shell: platform === 'win32' || platform === 'darwin',
-    detached: true,
-    stdio: 'ignore'
+    stdio: 'inherit',
+    shell: false,
   });
 
-  backendProcess.unref();
+  // Option 1: Wait fixed time (simple but brittle)
+  // await new Promise((resolve) => setTimeout(resolve, 5000));
 
-  // Give Flask time to start
-  await new Promise(res => setTimeout(res, 2000));
+  // ✅ Option 2: Wait until port is actually live (recommended)
+  await waitOn({
+    resources: ['http://localhost:5000'],
+    timeout: 15000,
+    interval: 500,
+    window: 1000,
+    validateStatus: (status) => status >= 200 && status < 500,
+  });
+});
+
+test.afterAll(() => {
+  if (backendProcess) {
+    console.log('🛑 Stopping backend process');
+    backendProcess.kill();
+  }
 });
 
 test('Set working dir, save state, and confirm backend responds', async ({ page }) => {
   await page.goto('http://localhost:5000');
-  await expect(page).toHaveTitle(/Flask|Your App/i);
-});
-
-test.afterAll(() => {
-  if (backendProcess) backendProcess.kill();
+  await expect(page).toHaveTitle(/Flask|Your App/i); // Customize based on your app’s title
 });
