@@ -72,6 +72,39 @@ jobs:
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
               --onefile --name web_app web_app.py $ADD_BINARIES \
               --add-data "$OPENMS_DATA_PATH:share/OpenMS"
+
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "🛠️ Windows build with specified pyopenms DLLs"
+            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/Lib/site-packages/pyopenms"
+
+            ADD_BINARIES=""
+            for dll in \
+              OpenMS.dll \
+              OpenSwathAlgo.dll \
+              Qt5Core.dll \
+              Qt5Network.dll \
+              concrt140.dll \
+              msvcp140.dll \
+              msvcp140_1.dll \
+              msvcp140_2.dll \
+              msvcp140_atomic_wait.dll \
+              msvcp140_codecvt_ids.dll \
+              vcruntime140.dll \
+              vcruntime140_1.dll \
+              vcomp140.dll; do
+
+              DLL_PATH="$WHEEL_LIB_PATH/$dll"
+              if [[ -f "$DLL_PATH" ]]; then
+                echo "✅ Adding $dll"
+                ADD_BINARIES+=" --add-binary $DLL_PATH:."
+              else
+                echo "⚠️ Missing $dll"
+              fi
+            done
+
+            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
+              --onefile --name web_app web_app.py $ADD_BINARIES
+
           else
             echo "🛠️ Standard build (no extra binaries)"
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
@@ -108,8 +141,19 @@ jobs:
       - name: Build React App
         run: npm run build
 
+      - name: Launch Backend
+        run: |
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            ./public/backend/web_app_macos &
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            ./public/backend/web_app_linux &
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            start /B public\\backend\\web_app.exe
+          fi
+          sleep 3
+
       - name: Run Playwright Test (backend readiness)
-        run: npm run test:playwright || echo "⚠️ Frontend test failed"
+        run: npm run test:playwright
 
       - name: Build Electron App
         run: npm run build:electron -- --${{ matrix.arch }}
