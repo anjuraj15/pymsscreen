@@ -28,7 +28,9 @@
       {
         "from": "public/backend",
         "to": "backend",
-        "filter": ["web_app*"]
+        "filter": [
+          "web_app*"
+        ]
       }
     ],
     "directories": {

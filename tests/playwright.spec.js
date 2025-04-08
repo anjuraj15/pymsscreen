@@ -6,6 +6,12 @@ import path from 'path';
 const WORKING_DIR = '/tmp/test_project';
 const BACKEND_URL = 'http://localhost:5000';
 
+test('backend is live', async ({ page }) => {
+  await page.goto('http://127.0.0.1:5000')
+  await expect(page).toHaveTitle(/your app title/i)
+})
+
+
 test.describe('State Management API', () => {
   test.beforeAll(() => {
     if (!fs.existsSync(WORKING_DIR)) {

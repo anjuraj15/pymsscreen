@@ -110,6 +110,12 @@ jobs:
           }
           echo "✅ Backend is live!"
 
+      - name: Install Playwright Test Runner (backend readiness)
+        run: npm install -D playwright @playwright/test
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
       - name: Run Playwright Test (backend readiness)
         run: npm run test:playwright
 

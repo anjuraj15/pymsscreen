@@ -30,6 +30,7 @@ pyyaml
 importlib-metadata
 importlib-resources
 zipp
+numpy<2
 
 # PDF generation / visualization
 fpdf
