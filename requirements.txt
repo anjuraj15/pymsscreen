@@ -1,39 +1,56 @@
-fpdf
-gevent
-kaleido
-tldextract
-python-dateutil
-charset-normalizer
-urllib3
-markupsafe
-PySocks
-zipp
-zope.interface
-zope.event
+# Web framework and CORS
+flask
+flask-cors
+werkzeug
+itsdangerous
+jinja2
 blinker
+
+# Async / Networking
+gevent
+greenlet
+PySocks
+requests-file
+urllib3
+idna
+certifi
+charset-normalizer
+
+# Utility libraries
+click
+six
+future
 filelock
+python-dateutil
+pytz
+tzdata
+tldextract
+pyyaml
 importlib-metadata
 importlib-resources
-narwhals
-six
-idna
-click
-colorama
+zipp
+
+# PDF generation / visualization
+fpdf
+kaleido
+
+# Plotting stack
+matplotlib
+contourpy
+cycler
 fonttools
 kiwisolver
 pyparsing
 packaging
-requests-file
-flask-cors
-pyyaml
-certifi
-contourpy
-cycler
-future
-greenlet
-itsdangerous
-jinja2
 pillow
-pytz
-tzdata
-werkzeug
+
+# Zope / event system
+zope.interface
+zope.event
+
+# Terminal output
+colorama
+
+# Other utils
+markupsafe
+narwhals

@@ -20,142 +20,78 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Micromamba
-        uses: mamba-org/setup-micromamba@v1
-        continue-on-error: true
+      - name: Set up Python 3.11 Environment
+        uses: actions/setup-python@v5
         with:
-          environment-file: environment.core.yml
-          environment-name: backend
-          init-shell: bash
-          cache-environment: true
-          cache-downloads: true
-          cache-environment-key: env-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
-          cache-downloads-key: pkgs-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
+          python-version: 3.11
 
       - name: Install Python dependencies
         shell: bash
         run: |
-          
-          # Common dependencies from pip
-          micromamba run -n backend pip install -r requirements.txt 
-          micromamba run -n backend pip install pyinstaller pyinstaller-hooks-contrib
+          python -m venv venv
+          source venv/bin/activate || source venv/Scripts/activate
 
-          # Platform-specific pyopenms and rdkit setup
+          pip install -r requirements.txt
+          pip install pyinstaller pyinstaller-hooks-contrib
+
           echo "🔍 Installing pyopenms and rdkit for platform: ${{ matrix.os }}"
 
-          if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-             
-             micromamba install -n backend -c conda-forge -c bioconda pyopenms=3.3.0 rdkit=2023.09.5 -y 
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            pip install wheels/pyopenms-3.3.0-cp311-cp311-win_amd64.whl
+            pip install wheels/rdkit_pypi-2022.9.5-cp311-cp311-win_amd64.whl
 
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-
-             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl             
-            
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            pip install wheels/pyopenms-3.3.0-cp311-cp311-macosx_14_0_arm64.whl
+            pip install wheels/rdkit_pypi-2022.9.5-cp311-cp311-macosx_11_0_arm64.whl
 
-             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-macosx_14_0_arm64.whl
-
-          else
-             echo "⚠️ pyopenms not installed: unknown platform"
+          elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+            pip install wheels/pyopenms-3.3.0-cp311-cp311-manylinux_2_28_x86_64.whl
+            pip install wheels/rdkit_pypi-2022.9.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
           fi
 
-      
       - name: Build Backend Binary
         shell: bash
         run: |
-          echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
+          source venv/bin/activate || source venv/Scripts/activate
 
-
-          #   Define common variables
           PYINSTALLER_COMMON="--clean --log-level DEBUG --onefile --name web_app web_app.py --collect-all rdkit --collect-all flask --collect-all pandas"
-          
+
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             echo "🛠️ macOS build with dynamic shared libraries"
-            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib/python3.12/site-packages/pyopenms"
-
+            WHEEL_LIB_PATH="venv/lib/python3.11/site-packages/pyopenms"
             ADD_BINARIES=""
-            echo "🔍 Scanning for dylibs in: $WHEEL_LIB_PATH"
             for lib in "$WHEEL_LIB_PATH"/*.dylib; do
-              if [[ -f "$lib" ]]; then
-                echo "✅ Adding $(basename "$lib")"
-                ADD_BINARIES+=" --add-binary $lib:."
-              fi
+              [[ -f "$lib" ]] && ADD_BINARIES+=" --add-binary $lib:."
             done
-
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
-            ADD_DATAS=--add-data=${OPENMS_DATA_PATH}:share/OpenMS
-            echo "📁 OpenMS data path: $OPENMS_DATA_PATH"
-
-            micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
+            ADD_DATAS="--add-data=${OPENMS_DATA_PATH}:share/OpenMS"
+            pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
             mv dist/web_app ./web_app
- 
+
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            echo "🛠️ Windows build with specified pyopenms DLLs"
-            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/Lib/site-packages/pyopenms"
-
+            echo "🛠️ Windows build with pyopenms DLLs"
+            WHEEL_LIB_PATH="venv/Lib/site-packages/pyopenms"
             ADD_BINARIES=""
-            for dll in \
-              OpenMS.dll \
-              OpenSwathAlgo.dll \
-              Qt5Core.dll \
-              Qt5Network.dll \
-              concrt140.dll \
-              msvcp140.dll \
-              msvcp140_1.dll \
-              msvcp140_2.dll \
-              msvcp140_atomic_wait.dll \
-              msvcp140_codecvt_ids.dll \
-              vcruntime140.dll \
-              vcruntime140_1.dll \
-              vcomp140.dll; do
-
+            for dll in OpenMS.dll OpenSwathAlgo.dll Qt5Core.dll Qt5Network.dll concrt140.dll \
+                       msvcp140.dll msvcp140_1.dll msvcp140_2.dll msvcp140_atomic_wait.dll \
+                       msvcp140_codecvt_ids.dll vcruntime140.dll vcruntime140_1.dll vcomp140.dll; do
               DLL_PATH="$WHEEL_LIB_PATH/$dll"
-              if [[ -f "$DLL_PATH" ]]; then
-                echo "✅ Adding $dll"
-                ADD_BINARIES+=" --add-binary $DLL_PATH:."
-              else
-                echo "⚠️ Missing $dll"
-              fi
+              [[ -f "$DLL_PATH" ]] && ADD_BINARIES+=" --add-binary $DLL_PATH:."
             done
-
-            micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES
+            pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES
             mv dist/web_app.exe ./web_app.exe
 
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-            echo "🛠️ Ubuntu build using standard PyInstaller options"
-            micromamba run -n backend pyinstaller $PYINSTALLER_COMMON \
-               --hidden-import pyopenms \
-               --collect-all pyopenms
-            mv dist/web_app.exe ./web_app.exe
-
-          else
-            echo "⚠️ Unsupported OS: ${{ matrix.os }}"
-            exit 1
+            echo "🛠️ Standard Linux build"
+            pyinstaller $PYINSTALLER_COMMON --hidden-import pyopenms --collect-all pyopenms
+            mv dist/web_app ./web_app
           fi
 
-          
-          # Debugging Step: Check if dist/ directory exists after PyInstaller build
-          echo "🔍 Checking dist/ directory after PyInstaller build:"
-          ls -l ./dist
-
-          # Check if the `web_app` binary is in the dist/web_app directory
-          
           echo "🔍 Checking for final binary:"
           ls -l ./web_app* || true
-
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            BIN="./web_app.exe"
-          else
-            BIN="./web_app"
-          fi
-
-          if [[ -f "$BIN" ]]; then
-             echo "✅ Binary build success: $BIN"
-          else
-             echo "❌ Binary missing after build!"
-             exit 1
-          fi
-      
+          BIN="./web_app"
+          [[ "${{ matrix.os }}" == "windows-latest" ]] && BIN="./web_app.exe"
+          [[ -f "$BIN" ]] && echo "✅ Binary build success: $BIN" || { echo "❌ Binary missing!"; exit 1; }
 
       - name: Cache node_modules
         uses: actions/cache@v4
@@ -165,48 +101,27 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-node-
 
-
       - name: Install Frontend Dependencies
         run: npm ci
-
 
       - name: Install Playwright (required for tests)
         run: npx playwright install --with-deps
 
-
       - name: Build React App
         run: npm run build
 
-
       - name: Launch Backend
         shell: bash
-        working-directory: ${{ github.workspace }}
         run: |
-          MATRIX_OS="${{ matrix.os }}"
-          echo "🚀 Launching backend on: ${MATRIX_OS}"
-          
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            chmod +x dist/web_app
-            ./web_app
-          elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-            chmod +x dist/web_app
-            ./web_app
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            ./web_app.exe &
-          else
-            echo "⚠️ Unsupported OS: ${{ matrix.os }}"
-            exit 1
-          fi
-
-
-          # Wait for backend to be available
+          source venv/bin/activate || source venv/Scripts/activate
+          echo "🚀 Launching backend on: ${{ matrix.os }}"
+          BIN="./web_app"
+          [[ "${{ matrix.os }}" == "windows-latest" ]] && BIN="./web_app.exe"
+          chmod +x "$BIN"
+          "$BIN" &
           echo "⏳ Waiting for backend to start..."
-          npx wait-on --timeout=120000 http://localhost:5000 || {
-            echo "❌ Backend failed to start within timeout period!"
-            exit 1
-          }
-
-          echo "✅ Backend successfully launched and ready!"
+          npx wait-on --timeout=120000 http://localhost:5000 || { echo "❌ Backend failed to start!"; exit 1; }
+          echo "✅ Backend is live!"
 
       - name: Run Playwright Test (backend readiness)
         run: npm run test:playwright
