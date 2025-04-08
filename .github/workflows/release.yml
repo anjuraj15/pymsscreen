@@ -40,6 +40,7 @@ jobs:
           echo "🔍 Installing pyopenms per platform..."
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
              micromamba install -n backend -c bioconda -c conda-forge pyopenms
+             micromamba install -n backend -c conda-forge rdkit
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
              micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl             
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
@@ -112,7 +113,13 @@ jobs:
           else
             echo "🛠️ Standard build (no extra binaries)"
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onefile --name web_app web_app.py \
+              --onedir \
+              --name web_app web_app.py \
+              --hidden-import rdkit \
+              --hidden-import rdkit.Chem \
+              --hidden-import rdkit.rdBase \
+              --hidden-import rdkit.DataStructs \
+              --hidden-import rdkit.Geometry \
               --collect-all rdkit \
               --collect-all flask
           fi
@@ -151,13 +158,18 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            echo "Launching backend for macOS"
             ./public/backend/web_app_macos &
+            npx wait-on http://localhost:5000
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            echo "Launching backend for Linux"
             ./public/backend/web_app_linux &
+            npx wait-on http://localhost:5000
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            start /B public\\\\backend\\\\web_app.exe
+            echo "Launching backend for Windows"
+            start /B public\\backend\\web_app.exe
+            npx wait-on http://localhost:5000
           fi
-          npx wait-on http://localhost:5000
 
       - name: Run Playwright Test (backend readiness)
         run: npm run test:playwright
