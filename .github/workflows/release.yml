@@ -41,7 +41,8 @@ jobs:
           micromamba run -n backend pip install pyinstaller
           echo "🔍 Installing pyopenms per platform..."
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-             micromamba install -n backend -c bioconda -c conda-forge pyopenms
+             micromamba update -n base micromamba
+             micromamba install -n backend -c conda-forge -c bioconda pyopenms || { echo "Error installing pyopenms"; exit 1; }
              micromamba install -n backend -c conda-forge rdkit
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
              micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl
