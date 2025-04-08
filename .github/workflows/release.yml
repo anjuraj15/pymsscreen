@@ -28,8 +28,8 @@ jobs:
           environment-file: environment.core.yml
           environment-name: backend
           init-shell: bash
-          cache-environment: false
-          cache-downloads: false
+          cache-environment: true
+          cache-downloads: true
           cache-environment-key: env-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
           cache-downloads-key: pkgs-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
 
