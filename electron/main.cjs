@@ -58,11 +58,16 @@ function createWindow() {
     },
   });
 
-  // Development: load frontend from dev server (Vite/React)
-  win.loadURL('http://localhost:5173');
+  const isDev = !app.isPackaged;
 
-  // Optionally open devtools
-  win.webContents.openDevTools();
+  if (isDev) {
+    win.loadURL('http://localhost:5173');
+    win.webContents.openDevTools(); // Only in development
+  } else {
+    const { pathToFileURL } = require('url');
+    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+    win.loadURL(pathToFileURL(indexPath).toString());
+  }
 }
 
 ipcMain.handle('select-directory', async () => {
