@@ -6,9 +6,16 @@ import path from 'path';
 const WORKING_DIR = '/tmp/test_project';
 const BACKEND_URL = 'http://localhost:5000';
 
-test('backend is live', async ({ page }) => {
-  await page.goto('http://127.0.0.1:5000')
-  await expect(page).toHaveTitle(/your app title/i)
+test.describe('Backend API health check', () => {
+  test('backend is live and returns state JSON', async ({ page }) => {
+    const response = await page.goto('http://127.0.0.1:5000')
+    expect(response.status()).toBe(200)
+
+    const body = await response.json()
+    console.log('Response body:', body)
+
+    expect(body.message).toMatch(/state saved/i)
+  })
 })
 
 
