@@ -9,7 +9,7 @@ jobs:
   build-platform:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest]
+        os: [ubuntu-22.04, windows-latest, macos-latest]
         arch: [x64]
     runs-on: ${{ matrix.os }}
     continue-on-error: true
@@ -35,15 +35,15 @@ jobs:
       - name: Install Python dependencies
         shell: bash
         run: |
-          micromamba activate backend          
           
           # Common dependencies from pip
-          micromamba run -n backend pip install -r requirements.txt pyinstaller pyinstaller-hooks-contrib
+          micromamba run -n backend pip install -r requirements.txt 
+          micromamba run -n backend pip install pyinstaller pyinstaller-hooks-contrib
 
           # Platform-specific pyopenms and rdkit setup
           echo "🔍 Installing pyopenms and rdkit for platform: ${{ matrix.os }}"
 
-          if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
              
              micromamba install -n backend -c conda-forge -c bioconda pyopenms=3.3.0 -y
 
@@ -65,7 +65,6 @@ jobs:
         run: |
           echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
 
-          micromamba activate backend
 
           #   Define common variables
           PYINSTALLER_COMMON="--clean --log-level DEBUG --onefile --name web_app web_app.py --collect-all rdkit --collect-all flask --collect-all pandas"
@@ -120,7 +119,7 @@ jobs:
 
             micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES
 
-          elif [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
             echo "🛠️ Ubuntu build using standard PyInstaller options"
             micromamba run -n backend pyinstaller $PYINSTALLER_COMMON \
                --hidden-import pyopenms \
@@ -176,9 +175,9 @@ jobs:
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             chmod +x dist/web_app_macos-latest
             ./dist/web_app_macos-latest &
-          elif [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
-            chmod +x dist/web_app_ubuntu-20.04
-            ./dist/web_app_ubuntu-20.04 &
+          elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+            chmod +x dist/web_app_ubuntu-22.04
+            ./dist/web_app_ubuntu-22.04 &
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             ./dist/web_app_windows-latest.exe &
           else
