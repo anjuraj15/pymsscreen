@@ -172,14 +172,11 @@ jobs:
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             chmod +x dist/web_app_macos-latest
             ./dist/web_app_macos-latest &
-            npx wait-on http://localhost:5000
           elif [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
             chmod +x dist/web_app_ubuntu-20.04
-            dist/web_app_ubuntu-20.04 &
-            npx wait-on http://localhost:5000
+            ./dist/web_app_ubuntu-20.04 &
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             ./dist/web_app_windows-latest.exe &
-            npx wait-on http://localhost:5000
           else
             echo "⚠️ Unsupported OS: ${{ matrix.os }}"
             exit 1
