@@ -173,13 +173,13 @@ jobs:
           echo "🚀 Launching backend on: ${MATRIX_OS}"
           
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            chmod +x dist/web_app_macos-latest
-            ./dist/web_app_macos-latest &
+            chmod +x dist/web_app
+            ./dist/web_app
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-            chmod +x dist/web_app_ubuntu-22.04
-            ./dist/web_app_ubuntu-22.04 &
+            chmod +x dist/web_app
+            ./dist/web_app
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            ./dist/web_app_windows-latest.exe &
+            ./dist/web_app.exe &
           else
             echo "⚠️ Unsupported OS: ${{ matrix.os }}"
             exit 1
