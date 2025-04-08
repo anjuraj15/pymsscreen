@@ -121,6 +121,8 @@ jobs:
               --name web_app web_app.py \
               --hidden-import pyopenms \
               --collect-all pyopenms \
+              --hidden-import pandas._libs.tslibs.base \
+              --collect-all pandas \
               --hidden-import rdkit \
               --hidden-import rdkit.Chem \
               --hidden-import rdkit.rdBase \
