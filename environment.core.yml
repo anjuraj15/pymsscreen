@@ -6,7 +6,7 @@ dependencies:
   - python=3.12
   - rdkit
   - flask
-  - pandas
+  - pandas>= 1.22.4
   - numpy
   - matplotlib
   - plotly
