@@ -58,7 +58,7 @@ function createWindow() {
     },
   });
 
-  // 🌱 Development: load frontend from dev server (Vite/React)
+  // Development: load frontend from dev server (Vite/React)
   win.loadURL('http://localhost:5173');
 
   // Optionally open devtools

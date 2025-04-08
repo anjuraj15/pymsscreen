@@ -15,6 +15,7 @@
     "build:electron": "electron-builder --publish never",
     "build:electron:x64": "electron-builder --linux AppImage --x64 --publish never",
     "build:electron:arm64": "electron-builder --linux AppImage --arm64 --publish never",
+    "build:app": "npm run build && npm run build:electron",
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {

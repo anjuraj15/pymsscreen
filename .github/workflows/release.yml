@@ -86,13 +86,13 @@ jobs:
             mv dist/web_app ./web_app
           fi
 
-          echo "🔍 Checking for final binary:"
+          echo " Checking for final binary:"
           ls -l ./web_app* || true
 
       - name: Launch Backend
         shell: bash
         run: |
-          echo "🚀 Launching backend on: ${{ matrix.os }}"
+          echo " Launching backend on: ${{ matrix.os }}"
 
           BIN="./web_app"
           [[ "${{ matrix.os }}" == "windows-latest" ]] && BIN="./web_app.exe"
@@ -106,9 +106,9 @@ jobs:
           echo "⏳ Waiting for backend to start on 127.0.0.1:5000..."
           sleep 2
           npx wait-on --timeout=180000 --interval=5000 http://127.0.0.1:5000 || {
-            echo "❌ Backend failed to start within timeout."; exit 1;
+            echo "Backend failed to start within timeout."; exit 1;
           }
-          echo "✅ Backend is live!"
+          echo " Backend is live!"
 
       - name: Install Playwright Test Runner (backend readiness)
         run: npm install -D playwright @playwright/test
@@ -119,8 +119,8 @@ jobs:
       - name: Run Playwright Test (backend readiness)
         run: npm run test:playwright
 
-      - name: Build Electron App
-        run: npm run build:electron -- --${{ matrix.arch }}
+      - name: Build Frontend +  Electron App
+        run:  npm run build:app -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
