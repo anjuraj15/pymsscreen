@@ -135,7 +135,7 @@ jobs:
  
       - name: Make Backend Executable (Non-Windows)
         if: matrix.os != 'windows-latest'
-        run: chmod +x public/backend/web_app_*
+        run: chmod +x ./dist/web_app_*
       
       - name: Verify Linux Backend Binary Location
         shell: bash
@@ -149,11 +149,11 @@ jobs:
 
            echo "🔍 Verifying that web_app_linux is a file (not a directory)"
            if [[ -d "./public/backend/web_app_linux" ]]; then
-              echo "⚠️ web_app_linux is a directory, not a file!"
+              echo "️ web_app_linux is a directory, not a file!"
            elif [[ -f "./public/backend/web_app_linux" ]]; then
-              echo "✅ web_app_linux is a file!"
+              echo " web_app_linux is a file!"
            else
-              echo "❌ web_app_linux doesn't exist or is an unknown type!"
+              echo " web_app_linux doesn't exist or is an unknown type!"
            fi
 
       - name: Cache node_modules
