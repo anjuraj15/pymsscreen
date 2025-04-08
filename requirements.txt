@@ -24,7 +24,7 @@ kiwisolver
 pyparsing
 packaging
 requests-file
-flask-cors  
+flask-cors
 pyyaml
 certifi
 contourpy
@@ -37,13 +37,3 @@ pillow
 pytz
 tzdata
 werkzeug
-python-dateutil
-pandas
-rdkit
-flask
-pandas>= 1.22.4
-numpy
-matplotlib
-plotly
-requests
-pip

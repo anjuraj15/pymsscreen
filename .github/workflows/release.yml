@@ -9,7 +9,7 @@ jobs:
   build-platform:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-20.04, windows-latest, macos-latest]
         arch: [x64]
     runs-on: ${{ matrix.os }}
     continue-on-error: true
@@ -17,13 +17,12 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      # Checkout the code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Set up Micromamba
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
+        continue-on-error: true
         with:
           environment-file: environment.core.yml
           environment-name: backend
@@ -33,35 +32,47 @@ jobs:
           cache-environment-key: env-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
           cache-downloads-key: pkgs-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
 
-      # Install Python dependencies
       - name: Install Python dependencies
         shell: bash
         run: |
-          micromamba create -n backend python=3.8.10 -y
-          micromamba run -n backend pip install -r requirements.txt
-          micromamba run -n backend pip install pyinstaller pyinstaller-hooks-contrib
-          micromamba run -n backend pyinstaller --clean --hidden-import=pandas --hidden-import=pandas.core.indexers --hidden-import=pandas.core.arrays.categorical web_app.py
-          echo "🔍 Installing pyopenms per platform..."
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-             micromamba update -n base micromamba -c conda-forge micromamba
-             micromamba install -n backend -c conda-forge -c bioconda pyopenms=2.7.0 --verbose || { echo "Error installing pyopenms"; exit 1; }
-             micromamba install -n backend -c conda-forge rdkit
+          micromamba activate backend          
+          
+          # Common dependencies from pip
+          micromamba run -n backend pip install -r requirements.txt pyinstaller pyinstaller-hooks-contrib
+
+          # Platform-specific pyopenms and rdkit setup
+          echo "🔍 Installing pyopenms and rdkit for platform: ${{ matrix.os }}"
+
+          if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+             
+             micromamba install -n backend -c conda-forge -c bioconda pyopenms=3.3.0 -y
+
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-             micromamba run -n backend pip install wheels/pyopenms-2.6.0-cp38-cp38-win_amd64.whl
+
+             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl             
+            
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "🔍 Installing pyopenms for macOS from Conda..."
-            micromamba install -n backend -c bioconda pyopenms=2.6.0 --verbose || { echo "Error installing pyopenms for macOS"; exit 1; }
+
+             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-macosx_14_0_arm64.whl
+
+          else
+             echo "⚠️ pyopenms not installed: unknown platform"
           fi
 
-      # Build Backend Binary
+      
       - name: Build Backend Binary
         shell: bash
         run: |
           echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
 
+          micromamba activate backend
+
+          #   Define common variables
+          PYINSTALLER_COMMON="--clean --log-level DEBUG --onefile --name web_app web_app.py --collect-all rdkit --collect-all flask --collect-all pandas"
+          
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             echo "🛠️ macOS build with dynamic shared libraries"
-            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib/python3.9/site-packages/pyopenms"
+            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib/python3.12/site-packages/pyopenms"
 
             ADD_BINARIES=""
             echo "🔍 Scanning for dylibs in: $WHEEL_LIB_PATH"
@@ -73,14 +84,11 @@ jobs:
             done
 
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
+            ADD_DATAS="--add-data '$OPENMS_DATA_PATH:share/OpenMS'"
             echo "📁 OpenMS data path: $OPENMS_DATA_PATH"
 
-            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onefile --name web_app web_app.py $ADD_BINARIES \
-              --add-data "$OPENMS_DATA_PATH:share/OpenMS" \
-              --collect-all rdkit \
-              --collect-all flask
-
+            micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
+ 
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             echo "🛠️ Windows build with specified pyopenms DLLs"
             WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/Lib/site-packages/pyopenms"
@@ -110,82 +118,91 @@ jobs:
               fi
             done
 
-            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onefile --name web_app web_app.py $ADD_BINARIES \
-              --collect-all rdkit \
-              --collect-all flask
+            micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES
+
+          elif [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+            echo "🛠️ Ubuntu build using standard PyInstaller options"
+            micromamba run -n backend pyinstaller $PYINSTALLER_COMMON \
+               --hidden-import pyopenms \
+               --collect-all pyopenms
 
           else
-            echo "🛠️ Standard build (no extra binaries)"
-            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onefile \
-              --name web_app web_app.py \
-              --hidden-import pyopenms \
-              --collect-all pyopenms \
-              --hidden-import pandas._libs.tslibs.base \
-              --collect-all pandas \
-              --hidden-import rdkit \
-              --hidden-import rdkit.Chem \
-              --hidden-import rdkit.rdBase \
-              --hidden-import rdkit.DataStructs \
-              --hidden-import rdkit.Geometry \
-              --collect-all rdkit \
-              --collect-all flask
+            echo "⚠️ Unsupported OS: ${{ matrix.os }}"
+            exit 1
           fi
 
-          # Move the binary to the correct location for each platform
-          mkdir -p public/backend
-          mv ./dist/web_app public/backend/web_app_${{ matrix.os }}  # Without -latest here
-          chmod +x public/backend/web_app_${{ matrix.os }}
-          echo "📂 Listing contents of public/backend:"
-          ls -l public/backend/
+          
+          # Debugging Step: Check if dist/ directory exists after PyInstaller build
+          echo "🔍 Checking dist/ directory after PyInstaller build:"
+          ls -l ./dist
 
-      # Install Frontend Dependencies and Build React App
+          # Check if the `web_app` binary is in the dist/web_app directory
+          
+          if [[ -f "./dist/web_app" || -f "./dist/web_app.exe" ]]; then
+            echo "✅ Binary build success."
+          else
+            echo "❌ Binary missing after build!"
+            exit 1
+          fi
+      
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ matrix.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ matrix.os }}-node-
+
       - name: Install Frontend Dependencies
         run: npm ci
+
+      - name: Install Playwright (required for tests)
+        run: npx playwright install --with-deps
 
       - name: Build React App
         run: npm run build
 
-      # Launch Backend for each platform
-      - name: Launch Backend (Linux)
-        if: startsWith(matrix.os, 'ubuntu')
+      - name: Launch Backend
         shell: bash
         run: |
-          echo "Launching Backend for Linux"
-          ./public/backend/web_app_ubuntu-latest &
-          npx wait-on http://localhost:5000
-
-      - name: Launch Backend (macOS)
-        if: startsWith(matrix.os, 'macos')
-        shell: bash
-        run: |
-          echo "Launching Backend for macOS"
-          ./public/backend/web_app_macos-latest &
-          npx wait-on http://localhost:5000
-
-      - name: Launch Backend (Windows)
-        if: startsWith(matrix.os, 'windows')
-        shell: bash
-        run: |
-          echo "Launching Backend for Windows"
-          powershell -Command "& 'public/backend/web_app_windows-latest.exe'"
-          echo "Waiting for 5 seconds to ensure backend starts"
-          sleep 10
-          npx wait-on http://localhost:5000 || echo "Failed to wait on backend"
+           
+          echo "🚀 Launching backend on: ${{ matrix.os }}"
+          
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            chmod +x dist/web_app_macos-latest
+            ./dist/web_app_macos-latest &
+            npx wait-on http://localhost:5000
+          elif [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+            chmod +x dist/web_app_ubuntu-20.04
+            dist/web_app_ubuntu-20.04 &
+            npx wait-on http://localhost:5000
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            ./dist/web_app_windows-latest.exe &
+            npx wait-on http://localhost:5000
+          else
+            echo "⚠️ Unsupported OS: ${{ matrix.os }}"
+            exit 1
+          fi
 
 
-      # Run Playwright Test for backend readiness
+          # Wait for backend to be available
+          echo "⏳ Waiting for backend to start..."
+          npx wait-on --timeout=120000 http://localhost:5000 || {
+            echo "❌ Backend failed to start within timeout period!"
+            exit 1
+          }
+
+          echo "✅ Backend successfully launched and ready!"
+
       - name: Run Playwright Test (backend readiness)
         run: npm run test:playwright
 
-      # Build Electron App
       - name: Build Electron App
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      # Upload Platform Bundle
       - name: Upload Platform Bundle
         uses: actions/upload-artifact@v4
         with:
