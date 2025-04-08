@@ -116,6 +116,9 @@ jobs:
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
               --onefile \
               --name web_app web_app.py \
+              --hidden-import pyopenms \
+              --add-binary "/path/to/pyopenms.so:." \
+              --collect-all pyopenms \
               --hidden-import rdkit \
               --hidden-import rdkit.Chem \
               --hidden-import rdkit.rdBase \
