@@ -48,7 +48,8 @@ jobs:
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
              micromamba run -n backend pip install wheels/pyopenms-2.6.0-cp38-cp38-win_amd64.whl
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-             micromamba run -n backend pip install wheels/pyopenms-2.6.0-cp38-cp38-macosx_10_9_x86_64.whl
+            echo "🔍 Installing pyopenms for macOS from Conda..."
+            micromamba install -n backend -c bioconda pyopenms=2.6.0 --verbose || { echo "Error installing pyopenms for macOS"; exit 1; }
           fi
 
       # Build Backend Binary

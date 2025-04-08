@@ -38,4 +38,4 @@ pytz
 tzdata
 werkzeug
 python-dateutil
-
+pandas
