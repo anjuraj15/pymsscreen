@@ -108,7 +108,9 @@ jobs:
           else
             echo "🛠️ Standard build (no extra binaries)"
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onefile --name web_app web_app.py
+             --onefile --name web_app web_app.py \
+             --collect-all rdkit \
+             --collect-all flask
           fi
 
           mkdir -p public/backend
@@ -142,6 +144,7 @@ jobs:
         run: npm run build
 
       - name: Launch Backend
+        shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             ./public/backend/web_app_macos &
