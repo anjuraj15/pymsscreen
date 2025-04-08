@@ -84,7 +84,7 @@ jobs:
             done
 
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
-            ADD_DATAS="--add-data '$OPENMS_DATA_PATH:share/OpenMS'"
+            ADD_DATAS="--add-data \"$OPENMS_DATA_PATH:share/OpenMS\""
             echo "📁 OpenMS data path: $OPENMS_DATA_PATH"
 
             micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
