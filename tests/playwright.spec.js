@@ -1,39 +1,57 @@
-import { test, expect } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
+import { test, expect } from '@playwright/test'
+import fs from 'fs'
+import path from 'path'
 
-// You can change this if your backend is using a different working path
-const WORKING_DIR = '/tmp/test_project';
-const BACKEND_URL = 'http://localhost:5000';
+const WORKING_DIR = '/tmp/test_project'
+const BACKEND_URL = 'http://127.0.0.1:5000'
 
-test.describe('Backend health check (HTML-safe)', () => {
-  test('backend is live and returns 200', async ({ page }) => {
-    const response = await page.goto('http://127.0.0.1:5000')
+//
+// Test: Check Backend is alive
+//
+
+test.describe('Backend live check', () => {
+  test('should respond with status 200 at root', async ({ page }) => {
+    const response = await page.goto(BACKEND_URL)
     expect(response.status()).toBe(200)
 
+    // Optional: log some HTML content
     const content = await page.content()
-    console.log('🔍 Backend returned HTML content:', content.slice(0, 300))
-
-    // Check for something likely in your page — adjust as needed:
-    expect(content).toContain('State') // or 'Flask', 'pyMSscreen', etc.
+    console.log(' Root HTML content:', content.slice(0, 200))
   })
 })
 
+//
+// Test: Full UI flow - Click Save State and expect success message
+//
+test.describe('Frontend Save State UI', () => {
+  test('should show success after clicking Save State button', async ({ page }) => {
+    await page.goto(BACKEND_URL)
+
+    // Click the actual button
+    await page.getByRole('button', { name: 'Save State' }).click()
+
+    // Expect success message to appear in UI
+    await expect(page.locator('body')).toContainText('State updated and saved successfully!')
+  })
+})
+
+//
+// ⃣ Test: API-level save_state endpoint + verify state.json file
+//
 test.describe('State Management API', () => {
   test.beforeAll(() => {
     if (!fs.existsSync(WORKING_DIR)) {
-      fs.mkdirSync(WORKING_DIR, { recursive: true });
-      console.log(`📁 Created test working directory at: ${WORKING_DIR}`);
+      fs.mkdirSync(WORKING_DIR, { recursive: true })
+      console.log(`Created test working directory at: ${WORKING_DIR}`)
     }
 
-    // Optional: create a dummy compound CSV if your backend depends on it
-    const dummyCSVPath = path.join(WORKING_DIR, 'compounds.csv');
+    const dummyCSVPath = path.join(WORKING_DIR, 'compounds.csv')
     if (!fs.existsSync(dummyCSVPath)) {
-      fs.writeFileSync(dummyCSVPath, 'ID,SMILES,Name\n1,CCO,Ethanol\n');
+      fs.writeFileSync(dummyCSVPath, 'ID,SMILES,Name\n1,CCO,Ethanol\n')
     }
-  });
+  })
 
-  test('should save state.json correctly', async ({ request }) => {
+  test('should save state.json correctly via API', async ({ request }) => {
     const response = await request.post(`${BACKEND_URL}/save_state`, {
       data: {
         working_directory: WORKING_DIR,
@@ -46,23 +64,23 @@ test.describe('State Management API', () => {
           }
         ]
       }
-    });
+    })
 
-  console.log("Response status: ", response.status()); // Log the response status
-  expect(response.ok()).toBeTruthy();
+    console.log('Response status: ', response.status())
+    expect(response.ok()).toBeTruthy()
 
-  const body = await response.json();
-  console.log("Response body: ", body); // Log the response body
-  expect(body.message).toContain('State saved');
+    const body = await response.json()
+    console.log('Response body: ', body)
+    expect(body.message).toContain('State saved')
 
-  const statePath = path.join(WORKING_DIR, 'state.json');
-  expect(fs.existsSync(statePath)).toBeTruthy();
+    const statePath = path.join(WORKING_DIR, 'state.json')
+    expect(fs.existsSync(statePath)).toBeTruthy()
 
-  const contents = fs.readFileSync(statePath, 'utf-8');
-  const state = JSON.parse(contents);
+    const contents = fs.readFileSync(statePath, 'utf-8')
+    const state = JSON.parse(contents)
 
-  console.log("State JSON: ", state); // Log the content of state.json
-  expect(state.working_directory).toBe(WORKING_DIR);
-  expect(state.mzml_files[0].adduct).toBe('[M+H]+');
-  });
-});
+    console.log('State JSON:', state)
+    expect(state.working_directory).toBe(WORKING_DIR)
+    expect(state.mzml_files[0].adduct).toBe('[M+H]+')
+  })
+})
