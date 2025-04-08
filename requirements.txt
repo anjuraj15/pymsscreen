@@ -43,6 +43,7 @@ kiwisolver
 pyparsing
 packaging
 pillow
+plotly
 
 # Zope / event system
 zope.interface
