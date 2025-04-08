@@ -39,16 +39,16 @@ jobs:
         run: |
           micromamba create -n backend python=3.8.10 -y
           micromamba run -n backend pip install -r requirements.txt
-          micromamba run -n backend pip install pyinstaller
+          micromamba run -n backend pip install pyinstaller pyinstaller-hooks-contrib
           echo "🔍 Installing pyopenms per platform..."
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
              micromamba update -n base micromamba -c conda-forge micromamba
              micromamba install -n backend -c conda-forge -c bioconda pyopenms=2.7.0 --verbose || { echo "Error installing pyopenms"; exit 1; }
              micromamba install -n backend -c conda-forge rdkit
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-             micromamba run -n backend pip install wheels/pyopenms-2.7.0-cp39-cp39-win_amd64.whl
+             micromamba run -n backend pip install wheels/pyopenms-2.6.0-cp38-cp38-win_amd64.whl
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-             micromamba run -n backend pip install wheels/pyopenms-2.7.0-cp39-cp39-macosx_10_15_x86_64.whl
+             micromamba run -n backend pip install wheels/pyopenms-2.6.0-cp38-cp38-macosx_10_9_x86_64.whl
           fi
 
       # Build Backend Binary
