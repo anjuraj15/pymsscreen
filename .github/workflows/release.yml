@@ -45,7 +45,7 @@ jobs:
 
           if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
              
-             micromamba install -n backend -c conda-forge -c bioconda pyopenms=3.3.0 -y
+             micromamba install -n backend -c conda-forge -c bioconda pyopenms=3.3.0 rdkit -y 
 
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
 
@@ -83,10 +83,11 @@ jobs:
             done
 
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
-            ADD_DATAS="--add-data \"$OPENMS_DATA_PATH:share/OpenMS\""
+            ADD_DATAS="--add-data=\"${OPENMS_DATA_PATH}:share/OpenMS\""
             echo "📁 OpenMS data path: $OPENMS_DATA_PATH"
 
             micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
+            mv dist/web_app ./web_app
  
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             echo "🛠️ Windows build with specified pyopenms DLLs"
@@ -118,12 +119,14 @@ jobs:
             done
 
             micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES
+            mv dist/web_app.exe ./web_app.exe
 
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
             echo "🛠️ Ubuntu build using standard PyInstaller options"
             micromamba run -n backend pyinstaller $PYINSTALLER_COMMON \
                --hidden-import pyopenms \
                --collect-all pyopenms
+            mv dist/web_app.exe ./web_app.exe
 
           else
             echo "⚠️ Unsupported OS: ${{ matrix.os }}"
@@ -168,18 +171,19 @@ jobs:
 
       - name: Launch Backend
         shell: bash
+        working-directory: ${{ github.workspace }}
         run: |
           MATRIX_OS="${{ matrix.os }}"
           echo "🚀 Launching backend on: ${MATRIX_OS}"
           
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             chmod +x dist/web_app
-            ./dist/web_app
+            ./web_app
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
             chmod +x dist/web_app
-            ./dist/web_app
+            ./web_app
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            ./dist/web_app.exe &
+            ./web_app.exe &
           else
             echo "⚠️ Unsupported OS: ${{ matrix.os }}"
             exit 1
