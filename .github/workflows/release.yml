@@ -102,7 +102,7 @@ jobs:
         shell: bash
         run: |
           echo "Launching Backend for Linux"
-          ./dist/web_app &
+          ./public/backend/web_app_linux &
           npx wait-on http://localhost:5000
 
       - name: Launch Backend (macOS)
@@ -110,7 +110,7 @@ jobs:
         shell: bash
         run: |
           echo "Launching Backend for macOS"
-          ./dist/web_app &
+          ./public/backend/web_app_macos &
           npx wait-on http://localhost:5000
 
       - name: Launch Backend (Windows)
@@ -118,7 +118,7 @@ jobs:
         shell: bash
         run: |
           echo "Launching Backend for Windows"
-          start /B dist\\\\web_app\\\\web_app.exe
+          start /B public\\backend\\web_app_windows.exe
           npx wait-on http://localhost:5000
 
       # Run Playwright Test for backend readiness
