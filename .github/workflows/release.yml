@@ -127,7 +127,7 @@ jobs:
 
           # Move the binary to the correct location for each platform
           mkdir -p public/backend
-          mv ./dist/web_app public/backend/web_app_${{ matrix.os }}-latest
+          mv ./dist/web_app public/backend/web_app_${{ matrix.os }}  # Without -latest here
           echo "📂 Listing contents of public/backend:"
           ls -l public/backend/
 
@@ -144,7 +144,7 @@ jobs:
         shell: bash
         run: |
           echo "Launching Backend for Linux"
-          ./public/backend/web_app_ubuntu-latest &
+          ./public/backend/web_app_ubuntu &
           npx wait-on http://localhost:5000
 
       - name: Launch Backend (macOS)
@@ -152,7 +152,7 @@ jobs:
         shell: bash
         run: |
           echo "Launching Backend for macOS"
-          ./public/backend/web_app_macos-latest &
+          ./public/backend/web_app_macos &
           npx wait-on http://localhost:5000
 
       - name: Launch Backend (Windows)
@@ -160,7 +160,7 @@ jobs:
         shell: bash
         run: |
           echo "Launching Backend for Windows"
-          start /B public\\backend\\web_app_windows-latest.exe
+          start /B public\\backend\\web_app_windows.exe
           npx wait-on http://localhost:5000
 
       # Run Playwright Test for backend readiness
