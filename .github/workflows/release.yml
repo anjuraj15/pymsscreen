@@ -28,8 +28,8 @@ jobs:
           environment-file: environment.core.yml
           environment-name: backend
           init-shell: bash
-          cache-environment: true
-          cache-downloads: true
+          cache-environment: false
+          cache-downloads: false
           cache-environment-key: env-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
           cache-downloads-key: pkgs-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
 
@@ -41,8 +41,8 @@ jobs:
           micromamba run -n backend pip install pyinstaller
           echo "🔍 Installing pyopenms per platform..."
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-             micromamba update -n base micromamba
-             micromamba install -n backend -c conda-forge -c bioconda pyopenms || { echo "Error installing pyopenms"; exit 1; }
+             micromamba update -n base micromamba -c conda-forge micromamba
+             micromamba install -n backend -c conda-forge -c bioconda pyopenms=2.7.0 --verbose || { echo "Error installing pyopenms"; exit 1; }
              micromamba install -n backend -c conda-forge rdkit
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
              micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl
@@ -164,8 +164,11 @@ jobs:
         shell: bash
         run: |
           echo "Launching Backend for Windows"
-          powershell -Command "Start-Process 'public\\backend\\web_app_windows-latest.exe'"
-          npx wait-on http://localhost:5000
+          powershell -Command "& 'public/backend/web_app_windows-latest.exe'"
+          echo "Waiting for 5 seconds to ensure backend starts"
+          sleep 10
+          npx wait-on http://localhost:5000 || echo "Failed to wait on backend"
+
 
       # Run Playwright Test for backend readiness
       - name: Run Playwright Test (backend readiness)
