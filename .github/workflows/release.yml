@@ -132,15 +132,7 @@ jobs:
           echo "🔍 Listing files in dist/web_app:"
           ls -l ./dist/web_app
           
-          mkdir -p public/backend
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            mv dist/web_app public/backend/web_app_linux
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            mv dist/web_app public/backend/web_app_macos
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            mv dist/web_app.exe public/backend/web_app.exe
-          fi
-
+ 
       - name: Make Backend Executable (Non-Windows)
         if: matrix.os != 'windows-latest'
         run: chmod +x public/backend/web_app_*
