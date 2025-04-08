@@ -48,14 +48,7 @@ jobs:
           else
              echo "⚠️ pyopenms not installed: unknown platform"
           fi
-      - name: Check current directory and file permissions
-        run: |
-          echo "🔍 Current working directory:"
-          pwd
-          echo "🔍 Checking if web_app.py exists and its permissions:"
-          ls -l web_app.py
-          echo "🔍 Listing dist/ directory:"
-          ls -l dist/
+
       
       - name: Build Backend Binary
         shell: bash
@@ -131,7 +124,14 @@ jobs:
               --collect-all rdkit \
               --collect-all flask
           fi
+          # Debugging Step: Check if dist/ directory exists after PyInstaller build
+          echo "🔍 Checking dist/ directory after PyInstaller build:"
+          ls -l ./dist
 
+          # Check if the `web_app` binary is in the dist/web_app directory
+          echo "🔍 Listing files in dist/web_app:"
+          ls -l ./dist/web_app
+          
           mkdir -p public/backend
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             mv dist/web_app public/backend/web_app_linux
