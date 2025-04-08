@@ -35,18 +35,21 @@ test.describe('State Management API', () => {
       }
     });
 
-    expect(response.ok()).toBeTruthy();
+  console.log("Response status: ", response.status()); // Log the response status
+  expect(response.ok()).toBeTruthy();
 
-    const body = await response.json();
-    expect(body.message).toContain('State saved');
+  const body = await response.json();
+  console.log("Response body: ", body); // Log the response body
+  expect(body.message).toContain('State saved');
 
-    const statePath = path.join(WORKING_DIR, 'state.json');
-    expect(fs.existsSync(statePath)).toBeTruthy();
+  const statePath = path.join(WORKING_DIR, 'state.json');
+  expect(fs.existsSync(statePath)).toBeTruthy();
 
-    const contents = fs.readFileSync(statePath, 'utf-8');
-    const state = JSON.parse(contents);
+  const contents = fs.readFileSync(statePath, 'utf-8');
+  const state = JSON.parse(contents);
 
-    expect(state.working_directory).toBe(WORKING_DIR);
-    expect(state.mzml_files[0].adduct).toBe('[M+H]+');
+  console.log("State JSON: ", state); // Log the content of state.json
+  expect(state.working_directory).toBe(WORKING_DIR);
+  expect(state.mzml_files[0].adduct).toBe('[M+H]+');
   });
 });
