@@ -150,7 +150,7 @@ jobs:
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             start /B public\\backend\\web_app.exe
           fi
-          sleep 3
+          npx wait-on http://localhost:5000
 
       - name: Run Playwright Test (backend readiness)
         run: npm run test:playwright
