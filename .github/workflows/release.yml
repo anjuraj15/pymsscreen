@@ -163,11 +163,11 @@ jobs:
             npx wait-on http://localhost:5000
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             echo "Launching backend for Linux"
-            ./public/backend/web_app_linux &
+            ./public/backend/web_app_linux/web_app_linux &
             npx wait-on http://localhost:5000
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             echo "Launching backend for Windows"
-            start /B public\\backend\\web_app.exe
+            start /B public\\\\backend\\\\web_app.exe
             npx wait-on http://localhost:5000
           fi
 
