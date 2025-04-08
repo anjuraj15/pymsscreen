@@ -17,11 +17,11 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      # Checkout the code from GitHub
+      # Checkout the code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Set up Micromamba for managing Python environments
+      # Set up Micromamba
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
@@ -44,55 +44,97 @@ jobs:
              micromamba install -n backend -c bioconda -c conda-forge pyopenms
              micromamba install -n backend -c conda-forge rdkit
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl             
+             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
              micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-macosx_14_0_arm64.whl
           fi
 
-      # Build Backend Binary for Linux
-      - name: Build Python script into a stand-alone binary (Linux)
-        if: startsWith(matrix.os, 'ubuntu')
+      # Build Backend Binary
+      - name: Build Backend Binary
         shell: bash
         run: |
-          echo "📦 Building stand-alone binary for Ubuntu"
-          micromamba run -n backend pyinstaller --onefile --name web_app web_app.py
-          # Create public/backend directory and move the binary
+          echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
+
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            echo "🛠️ macOS build with dynamic shared libraries"
+            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib/python3.12/site-packages/pyopenms"
+
+            ADD_BINARIES=""
+            echo "🔍 Scanning for dylibs in: $WHEEL_LIB_PATH"
+            for lib in "$WHEEL_LIB_PATH"/*.dylib; do
+              if [[ -f "$lib" ]]; then
+                echo "✅ Adding $(basename "$lib")"
+                ADD_BINARIES+=" --add-binary $lib:."
+              fi
+            done
+
+            OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
+            echo "📁 OpenMS data path: $OPENMS_DATA_PATH"
+
+            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
+              --onefile --name web_app web_app.py $ADD_BINARIES \
+              --add-data "$OPENMS_DATA_PATH:share/OpenMS" \
+              --collect-all rdkit \
+              --collect-all flask
+
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "🛠️ Windows build with specified pyopenms DLLs"
+            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/Lib/site-packages/pyopenms"
+
+            ADD_BINARIES=""
+            for dll in \
+              OpenMS.dll \
+              OpenSwathAlgo.dll \
+              Qt5Core.dll \
+              Qt5Network.dll \
+              concrt140.dll \
+              msvcp140.dll \
+              msvcp140_1.dll \
+              msvcp140_2.dll \
+              msvcp140_atomic_wait.dll \
+              msvcp140_codecvt_ids.dll \
+              vcruntime140.dll \
+              vcruntime140_1.dll \
+              vcomp140.dll; do
+
+              DLL_PATH="$WHEEL_LIB_PATH/$dll"
+              if [[ -f "$DLL_PATH" ]]; then
+                echo "✅ Adding $dll"
+                ADD_BINARIES+=" --add-binary $DLL_PATH:."
+              else
+                echo "⚠️ Missing $dll"
+              fi
+            done
+
+            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
+              --onefile --name web_app web_app.py $ADD_BINARIES \
+              --collect-all rdkit \
+              --collect-all flask
+
+          else
+            echo "🛠️ Standard build (no extra binaries)"
+            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
+              --onedir \
+              --name web_app web_app.py \
+              --hidden-import rdkit \
+              --hidden-import rdkit.Chem \
+              --hidden-import rdkit.rdBase \
+              --hidden-import rdkit.DataStructs \
+              --hidden-import rdkit.Geometry \
+              --collect-all rdkit \
+              --collect-all flask
+          fi
+
+          # Create the public/backend directory and move the binary
           mkdir -p public/backend
-          mv ./dist/web_app public/backend/web_app_linux
+          mv ./dist/web_app public/backend/web_app_${{ matrix.os }}
           echo "📂 Listing contents of public/backend:"
           ls -l public/backend/
 
-      # Build Backend Binary for macOS
-      - name: Build Python script into a stand-alone binary (macOS)
-        if: startsWith(matrix.os, 'macos')
-        shell: bash
-        run: |
-          echo "📦 Building stand-alone binary for macOS"
-          micromamba run -n backend pyinstaller --onefile --name web_app web_app.py
-          # Create public/backend directory and move the binary
-          mkdir -p public/backend
-          mv ./dist/web_app public/backend/web_app_macos
-          echo "📂 Listing contents of public/backend:"
-          ls -l public/backend/
-
-      # Build Backend Binary for Windows
-      - name: Build Python script into a stand-alone binary (Windows)
-        if: startsWith(matrix.os, 'windows')
-        shell: bash
-        run: |
-          echo "📦 Building stand-alone binary for Windows"
-          micromamba run -n backend pyinstaller --onefile --name web_app web_app.py
-          # Create public/backend directory and move the binary
-          mkdir -p public/backend
-          mv ./dist/web_app.exe public/backend/web_app_windows.exe
-          echo "📂 Listing contents of public/backend:"
-          ls -l public/backend/
-
-      # Install Frontend Dependencies
+      # Install Frontend Dependencies and Build React App
       - name: Install Frontend Dependencies
         run: npm ci
 
-      # Build React App
       - name: Build React App
         run: npm run build
 
