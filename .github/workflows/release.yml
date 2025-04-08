@@ -135,7 +135,7 @@ jobs:
  
       - name: Make Backend Executable (Non-Windows)
         if: matrix.os != 'windows-latest'
-        run: chmod +x ./dist/web_app_*
+        run: chmod +x ./dist/web_app/web_app_*
       
       - name: Verify Linux Backend Binary Location
         shell: bash
