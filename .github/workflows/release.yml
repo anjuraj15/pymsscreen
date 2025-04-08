@@ -114,7 +114,7 @@ jobs:
           else
             echo "🛠️ Standard build (no extra binaries)"
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onedir \
+              --onefile \
               --name web_app web_app.py \
               --hidden-import rdkit \
               --hidden-import rdkit.Chem \
@@ -128,6 +128,7 @@ jobs:
           # Move the binary to the correct location for each platform
           mkdir -p public/backend
           mv ./dist/web_app public/backend/web_app_${{ matrix.os }}  # Without -latest here
+          chmod +x public/backend/web_app_${{ matrix.os }}
           echo "📂 Listing contents of public/backend:"
           ls -l public/backend/
 
@@ -160,7 +161,7 @@ jobs:
         shell: bash
         run: |
           echo "Launching Backend for Windows"
-          start /B public\\backend\\web_app_windows-latest.exe
+          powershell -Command "Start-Process 'public\\backend\\web_app_windows-latest.exe'"
           npx wait-on http://localhost:5000
 
       # Run Playwright Test for backend readiness
