@@ -9,6 +9,7 @@ import yaml
 from rdkit import Chem
 from rdkit.Chem import Descriptors, rdMolDescriptors
 from pyopenms import MSExperiment, MzMLFile
+from waitress import serve
 
 app = Flask(__name__)
 from routes.pdf_export import register_pdf_export
@@ -629,4 +630,4 @@ def index():
     return "", 200
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="127.0.0.1", port=5000)

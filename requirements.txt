@@ -5,6 +5,7 @@ werkzeug
 itsdangerous
 jinja2
 blinker
+waitress
 
 # Async / Networking
 gevent

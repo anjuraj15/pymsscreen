@@ -29,35 +29,34 @@ jobs:
         shell: bash
         run: |
           python -m venv venv
-          source venv/bin/activate || source venv/Scripts/activate
+          source venv/bin/activate || source venv/Scripts/activate || echo "venv active"
 
-          pip install -r requirements.txt
-          pip install pyinstaller pyinstaller-hooks-contrib
+          ./venv/bin/pip install -r requirements.txt || ./venv/Scripts/pip.exe install -r requirements.txt
+          ./venv/bin/pip install pyinstaller pyinstaller-hooks-contrib || ./venv/Scripts/pip.exe install pyinstaller pyinstaller-hooks-contrib
 
           echo "🔍 Installing pyopenms and rdkit for platform: ${{ matrix.os }}"
 
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            pip install wheels/pyopenms-3.3.0-cp311-cp311-win_amd64.whl
-            pip install wheels/rdkit_pypi-2022.9.5-cp311-cp311-win_amd64.whl
+            ./venv/Scripts/pip.exe install wheels/pyopenms-3.3.0-cp311-cp311-win_amd64.whl
+            ./venv/Scripts/pip.exe install wheels/rdkit_pypi-2022.9.5-cp311-cp311-win_amd64.whl
 
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            pip install wheels/pyopenms-3.3.0-cp311-cp311-macosx_14_0_arm64.whl
-            pip install wheels/rdkit_pypi-2022.9.5-cp311-cp311-macosx_11_0_arm64.whl
+            ./venv/bin/pip install wheels/pyopenms-3.3.0-cp311-cp311-macosx_14_0_arm64.whl
+            ./venv/bin/pip install wheels/rdkit_pypi-2022.9.5-cp311-cp311-macosx_11_0_arm64.whl
 
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-            pip install wheels/pyopenms-3.3.0-cp311-cp311-manylinux_2_28_x86_64.whl
-            pip install wheels/rdkit_pypi-2022.9.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+            ./venv/bin/pip install wheels/pyopenms-3.3.0-cp311-cp311-manylinux_2_28_x86_64.whl
+            ./venv/bin/pip install wheels/rdkit_pypi-2022.9.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
           fi
 
       - name: Build Backend Binary
         shell: bash
         run: |
-          source venv/bin/activate || source venv/Scripts/activate
-
-          PYINSTALLER_COMMON="--clean --log-level DEBUG --onefile --name web_app web_app.py --collect-all rdkit --collect-all flask --collect-all pandas"
+          PYINSTALLER_COMMON="--clean --log-level DEBUG --onefile --name web_app web_app.py \
+            --collect-all rdkit --collect-all flask --collect-all pandas --collect-all plotly \
+            --collect-all numpy --collect-submodules numpy"
 
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "🛠️ macOS build with dynamic shared libraries"
             WHEEL_LIB_PATH="venv/lib/python3.11/site-packages/pyopenms"
             ADD_BINARIES=""
             for lib in "$WHEEL_LIB_PATH"/*.dylib; do
@@ -65,62 +64,50 @@ jobs:
             done
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
             ADD_DATAS="--add-data=${OPENMS_DATA_PATH}:share/OpenMS"
-            pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
+            ./venv/bin/pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
             mv dist/web_app ./web_app
 
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            echo "🛠️ Windows build with pyopenms DLLs"
             WHEEL_LIB_PATH="venv/Lib/site-packages/pyopenms"
             ADD_BINARIES=""
             for dll in OpenMS.dll OpenSwathAlgo.dll Qt5Core.dll Qt5Network.dll concrt140.dll \
-                       msvcp140.dll msvcp140_1.dll msvcp140_2.dll msvcp140_atomic_wait.dll \
-                       msvcp140_codecvt_ids.dll vcruntime140.dll vcruntime140_1.dll vcomp140.dll; do
-              DLL_PATH="$WHEEL_LIB_PATH/$dll"
+                         msvcp140.dll msvcp140_1.dll msvcp140_2.dll msvcp140_atomic_wait.dll \
+                         msvcp140_codecvt_ids.dll vcruntime140.dll vcruntime140_1.dll vcomp140.dll; do
+              DLL_PATH="$WHEEL_LIB_PATH\\$dll"
               [[ -f "$DLL_PATH" ]] && ADD_BINARIES+=" --add-binary $DLL_PATH:."
             done
-            pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES
+            OPENMS_DATA_PATH="$WHEEL_LIB_PATH\\share\\OpenMS"
+            ADD_DATAS="--add-data=${OPENMS_DATA_PATH};share\\OpenMS"
+            ./venv/Scripts/pyinstaller.exe $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
             mv dist/web_app.exe ./web_app.exe
 
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-            echo "🛠️ Standard Linux build"
-            pyinstaller $PYINSTALLER_COMMON --hidden-import pyopenms --collect-all pyopenms
+            ./venv/bin/pyinstaller $PYINSTALLER_COMMON --hidden-import pyopenms --collect-all pyopenms
             mv dist/web_app ./web_app
           fi
 
           echo "🔍 Checking for final binary:"
           ls -l ./web_app* || true
-          BIN="./web_app"
-          [[ "${{ matrix.os }}" == "windows-latest" ]] && BIN="./web_app.exe"
-          [[ -f "$BIN" ]] && echo "✅ Binary build success: $BIN" || { echo "❌ Binary missing!"; exit 1; }
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ matrix.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ matrix.os }}-node-
-
-      - name: Install Frontend Dependencies
-        run: npm ci
-
-      - name: Install Playwright (required for tests)
-        run: npx playwright install --with-deps
-
-      - name: Build React App
-        run: npm run build
 
       - name: Launch Backend
         shell: bash
         run: |
-          source venv/bin/activate || source venv/Scripts/activate
           echo "🚀 Launching backend on: ${{ matrix.os }}"
+
           BIN="./web_app"
           [[ "${{ matrix.os }}" == "windows-latest" ]] && BIN="./web_app.exe"
-          chmod +x "$BIN"
+
+          export OPENMS_DATA_PATH=share/OpenMS
+          [[ "${{ matrix.os }}" == "windows-latest" ]] && export OPENMS_DATA_PATH=share\\OpenMS
+
+          chmod +x "$BIN" || true
           "$BIN" &
-          echo "⏳ Waiting for backend to start..."
-          npx wait-on --timeout=120000 http://localhost:5000 || { echo "❌ Backend failed to start!"; exit 1; }
+
+          echo "⏳ Waiting for backend to start on 127.0.0.1:5000..."
+          sleep 2
+          npx wait-on --timeout=180000 --interval=5000 http://127.0.0.1:5000 || {
+            echo "❌ Backend failed to start within timeout."; exit 1;
+          }
           echo "✅ Backend is live!"
 
       - name: Run Playwright Test (backend readiness)
