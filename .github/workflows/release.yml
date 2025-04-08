@@ -17,12 +17,13 @@ jobs:
     timeout-minutes: 90
 
     steps:
+      # Checkout the code from GitHub
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # Set up Micromamba for managing Python environments
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
-        continue-on-error: true
         with:
           environment-file: environment.core.yml
           environment-name: backend
@@ -32,6 +33,7 @@ jobs:
           cache-environment-key: env-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
           cache-downloads-key: pkgs-${{ matrix.os }}-${{ hashFiles('environment.core.yml') }}
 
+      # Install Python dependencies
       - name: Install Python dependencies
         shell: bash
         run: |
@@ -45,136 +47,91 @@ jobs:
              micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl             
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
              micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-macosx_14_0_arm64.whl
-          else
-             echo "⚠️ pyopenms not installed: unknown platform"
           fi
 
-      
-      - name: Build Backend Binary
+      # Build Backend Binary for Linux
+      - name: Build Python script into a stand-alone binary (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
-          echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
-          
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "🛠️ macOS build with dynamic shared libraries"
-            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib/python3.12/site-packages/pyopenms"
+          echo "📦 Building stand-alone binary for Ubuntu"
+          micromamba run -n backend pyinstaller --onefile --name web_app web_app.py
+          # Create public/backend directory and move the binary
+          mkdir -p public/backend
+          mv ./dist/web_app public/backend/web_app_linux
+          echo "📂 Listing contents of public/backend:"
+          ls -l public/backend/
 
-            ADD_BINARIES=""
-            echo "🔍 Scanning for dylibs in: $WHEEL_LIB_PATH"
-            for lib in "$WHEEL_LIB_PATH"/*.dylib; do
-              if [[ -f "$lib" ]]; then
-                echo "✅ Adding $(basename "$lib")"
-                ADD_BINARIES+=" --add-binary $lib:."
-              fi
-            done
+      # Build Backend Binary for macOS
+      - name: Build Python script into a stand-alone binary (macOS)
+        if: startsWith(matrix.os, 'macos')
+        shell: bash
+        run: |
+          echo "📦 Building stand-alone binary for macOS"
+          micromamba run -n backend pyinstaller --onefile --name web_app web_app.py
+          # Create public/backend directory and move the binary
+          mkdir -p public/backend
+          mv ./dist/web_app public/backend/web_app_macos
+          echo "📂 Listing contents of public/backend:"
+          ls -l public/backend/
 
-            OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
-            echo "📁 OpenMS data path: $OPENMS_DATA_PATH"
+      # Build Backend Binary for Windows
+      - name: Build Python script into a stand-alone binary (Windows)
+        if: startsWith(matrix.os, 'windows')
+        shell: bash
+        run: |
+          echo "📦 Building stand-alone binary for Windows"
+          micromamba run -n backend pyinstaller --onefile --name web_app web_app.py
+          # Create public/backend directory and move the binary
+          mkdir -p public/backend
+          mv ./dist/web_app.exe public/backend/web_app_windows.exe
+          echo "📂 Listing contents of public/backend:"
+          ls -l public/backend/
 
-            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onefile --name web_app web_app.py $ADD_BINARIES \
-              --add-data "$OPENMS_DATA_PATH:share/OpenMS" \
-              --collect-all rdkit \
-              --collect-all flask
-
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            echo "🛠️ Windows build with specified pyopenms DLLs"
-            WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/Lib/site-packages/pyopenms"
-
-            ADD_BINARIES=""
-            for dll in \
-              OpenMS.dll \
-              OpenSwathAlgo.dll \
-              Qt5Core.dll \
-              Qt5Network.dll \
-              concrt140.dll \
-              msvcp140.dll \
-              msvcp140_1.dll \
-              msvcp140_2.dll \
-              msvcp140_atomic_wait.dll \
-              msvcp140_codecvt_ids.dll \
-              vcruntime140.dll \
-              vcruntime140_1.dll \
-              vcomp140.dll; do
-
-              DLL_PATH="$WHEEL_LIB_PATH/$dll"
-              if [[ -f "$DLL_PATH" ]]; then
-                echo "✅ Adding $dll"
-                ADD_BINARIES+=" --add-binary $DLL_PATH:."
-              else
-                echo "⚠️ Missing $dll"
-              fi
-            done
-
-            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onefile --name web_app web_app.py $ADD_BINARIES \
-              --collect-all rdkit \
-              --collect-all flask
-
-          else
-            echo "🛠️ Standard build (no extra binaries)"
-            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-              --onedir \
-              --name web_app web_app.py \
-              --hidden-import rdkit \
-              --hidden-import rdkit.Chem \
-              --hidden-import rdkit.rdBase \
-              --hidden-import rdkit.DataStructs \
-              --hidden-import rdkit.Geometry \
-              --collect-all rdkit \
-              --collect-all flask
-          fi
-          # Debugging Step: Check if dist/ directory exists after PyInstaller build
-          echo "🔍 Checking dist/ directory after PyInstaller build:"
-          ls -l ./dist
-
-          # Check if the `web_app` binary is in the dist/web_app directory
-          echo "🔍 Listing files in dist/web_app:"
-          ls -l ./dist/web_app       
-      
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ matrix.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ matrix.os }}-node-
-
+      # Install Frontend Dependencies
       - name: Install Frontend Dependencies
         run: npm ci
 
-      - name: Install Playwright (required for tests)
-        run: npx playwright install --with-deps
-
+      # Build React App
       - name: Build React App
         run: npm run build
 
-      - name: Launch Backend
+      # Launch Backend for each platform
+      - name: Launch Backend (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "Launching backend for macOS"
-            dist/web_app &
-            npx wait-on http://localhost:5000
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            echo "Launching backend for Linux"
-            dist/web_app &
-            npx wait-on http://localhost:5000
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            echo "Launching backend for Windows"
-            start /B dist\\\\web_app.exe
-            npx wait-on http://localhost:5000
-          fi
+          echo "Launching Backend for Linux"
+          ./dist/web_app &
+          npx wait-on http://localhost:5000
 
+      - name: Launch Backend (macOS)
+        if: startsWith(matrix.os, 'macos')
+        shell: bash
+        run: |
+          echo "Launching Backend for macOS"
+          ./dist/web_app &
+          npx wait-on http://localhost:5000
+
+      - name: Launch Backend (Windows)
+        if: startsWith(matrix.os, 'windows')
+        shell: bash
+        run: |
+          echo "Launching Backend for Windows"
+          start /B dist\\\\web_app\\\\web_app.exe
+          npx wait-on http://localhost:5000
+
+      # Run Playwright Test for backend readiness
       - name: Run Playwright Test (backend readiness)
         run: npm run test:playwright
 
+      # Build Electron App
       - name: Build Electron App
         run: npm run build:electron -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      # Upload Platform Bundle
       - name: Upload Platform Bundle
         uses: actions/upload-artifact@v4
         with:
