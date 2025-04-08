@@ -8,16 +8,23 @@ const BACKEND_URL = 'http://localhost:5000';
 
 test.describe('Backend API health check', () => {
   test('backend is live and returns state JSON', async ({ page }) => {
-    const response = await page.goto('http://127.0.0.1:5000')
-    expect(response.status()).toBe(200)
+    const response = await page.evaluate(async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:5000')
+        const json = await res.json()
+        return { status: res.status, body: json }
+      } catch (error) {
+        return { status: 500, body: { message: 'Invalid JSON' } }
+      }
+    })
 
-    const body = await response.json()
-    console.log('Response body:', body)
+    console.log('Response status: ', response.status)
+    console.log('Response body: ', response.body)
 
-    expect(body.message).toMatch(/state saved/i)
+    expect(response.status).toBe(200)
+    expect(response.body.message).toMatch(/state saved/i)
   })
 })
-
 
 test.describe('State Management API', () => {
   test.beforeAll(() => {
