@@ -39,7 +39,7 @@ def resolve_path(p):
 def save_state():
     try:
         data = request.get_json()
-        print("📥 Save request data:", data)
+        print(" Save request data:", data)
         working_directory = os.path.expanduser(data.get("working_directory", "."))
 
         if not os.path.exists(working_directory):
@@ -89,7 +89,7 @@ def generate_table():
     try:
         body = request.get_json(force=True)
         working_directory = resolve_path(body.get("workingDirectory", ""))
-        print(f"📁 Working directory: {working_directory}")
+        print(f" Working directory: {working_directory}")
 
         state_path = os.path.join(working_directory, "state.json")
         if not os.path.exists(state_path):
@@ -162,11 +162,11 @@ def generate_table():
         output_path = os.path.join(working_directory, "comprehensive_table.csv")
         pd.DataFrame(output_rows).to_csv(output_path, index=False)
 
-        print(f"✅ Table saved at: {output_path}")
+        print(f" Table saved at: {output_path}")
         return jsonify({"message": "Table generated successfully", "path": output_path})
 
     except Exception as e:
-        print(f"❌ Error generating table: {e}")
+        print(f" Error generating table: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -175,7 +175,7 @@ def save_extract_config():
     try:
         data = request.get_json()
         working_directory = resolve_path(data.get("working_directory", "."))
-        print("🛠 Saving extraction config to:", working_directory)
+        print(" Saving extraction config to:", working_directory)
 
         if not os.path.isdir(working_directory):
             return jsonify({"error": f"Working directory not found: {working_directory}"}), 400
@@ -203,7 +203,7 @@ def save_extract_config():
         return jsonify({"message": f"Saved to {config_path}"})
 
     except Exception as e:
-        print(f"❌ Error saving extract_config.yaml: {e}")
+        print(f" Error saving extract_config.yaml: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/extract_data", methods=["POST"])
@@ -214,20 +214,20 @@ def extract_data():
         import os, json, yaml
 
         req = request.get_json()
-        print("📥 extract_data called with:", req)
+        print(" extract_data called with:", req)
         working_dir = resolve_path(req.get("working_directory"))
         config_path = os.path.join(working_dir, "extract_config.yaml")
         state_path = os.path.join(working_dir, "state.json")
         compound_path = os.path.join(working_dir, "comprehensive_table.csv")
-        print("🔍 Looking for:")
+        print(" Looking for:")
         print(" - Config:", config_path)
         print(" - State:", state_path)
         print(" - Compounds:", compound_path)
 
         # Print file existence
-        print("📁 Config exists?", os.path.exists(config_path))
-        print("📁 State exists?", os.path.exists(state_path))
-        print("📁 Table exists?", os.path.exists(compound_path))
+        print(" Config exists?", os.path.exists(config_path))
+        print(" State exists?", os.path.exists(state_path))
+        print(" Table exists?", os.path.exists(compound_path))
 
         spectra_dir = os.path.join(working_dir, "ms2_spectra")
         os.makedirs(spectra_dir, exist_ok=True)
@@ -454,11 +454,11 @@ def load_comprehensive_table():
     try:
         working_directory = os.path.expanduser(request.args.get("working_directory", "."))
         table_path = os.path.join(working_directory, "comprehensive_table.csv")
-        print("📁 Requested path:", request.args.get("working_directory"))
-        print("📂 Resolved path:", table_path)
+        print(" Requested path:", request.args.get("working_directory"))
+        print(" Resolved path:", table_path)
 
         if not os.path.exists(table_path):
-            print("❌ File not found at resolved path!")
+            print(" File not found at resolved path!")
             return jsonify([])  # return empty list
 
         df = pd.read_csv(table_path)
@@ -508,8 +508,8 @@ def save_qa_flags():
             mask = (df["ID"].astype(str) == str(compound_id)) & \
                    (df["adduct"] == adduct) & (df["tag"] == tag)
 
-            print(f"🛠 Updating row for ID={compound_id}, adduct={adduct}, tag={tag}")
-            print("➡️  Incoming flags:", update)
+            print(f" Updating row for ID={compound_id}, adduct={adduct}, tag={tag}")
+            print("️  Incoming flags:", update)
 
             for display_key, summary_key in {
                 "MS1_Exists": "qa_ms1_exists",
@@ -522,7 +522,7 @@ def save_qa_flags():
                     value = bool(update[display_key])
                     for idx in df[mask].index:
                         df.at[idx, summary_key] = value
-                        print(f"🔄 Set {summary_key} at row {idx} = {value}")
+                        print(f" Set {summary_key} at row {idx} = {value}")
 
             for idx in df[mask].index:
                 all_flags = [
@@ -535,9 +535,9 @@ def save_qa_flags():
                 ]
                 result = all(all_flags)
                 df.at[idx, "qa_pass"] = result
-                print(f"✅ qa_pass for row {idx} = {result}")
+                print(f" qa_pass for row {idx} = {result}")
 
-        # 🔄 Ensure booleans are saved correctly
+        #  Ensure booleans are saved correctly
         for col in [
             "qa_ms1_exists", "qa_ms1_good_int", "qa_ms1_above_noise",
             "qa_ms2_exists", "qa_ms2_good_int", "qa_ms2_near",
@@ -546,14 +546,14 @@ def save_qa_flags():
             if col in df.columns:
                 df[col] = df[col].astype(bool)
 
-        print(f"💾 Writing updated summary table to: {table_path}")
+        print(f" Writing updated summary table to: {table_path}")
         df.to_csv(table_path, index=False)
-        print("✅ Save completed.")
+        print(" Save completed.")
 
         return jsonify({"message": f"QA flags updated in {table_path}"})
 
     except Exception as e:
-        print(f"❌ Error saving flags: {e}")
+        print(f" Error saving flags: {e}")
         return jsonify({"error": str(e)}), 500
 
 

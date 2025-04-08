@@ -1,8 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
 const os = require('os');
 const fs = require('fs');
+const { spawn } = require('child_process');
+const { pathToFileURL } = require('url');
 
 let flaskProcess;
 
@@ -26,7 +27,7 @@ function startFlask() {
   const backendPath = getBackendBinaryPath();
   const shell = os.platform() === 'win32' || os.platform() === 'darwin';
 
-  // Optional: log output to file (especially useful on macOS)
+  // Optional: log output to file
   const logDir = app.getPath('userData');
   const logFile = path.join(logDir, 'flask-backend.log');
   const out = fs.openSync(logFile, 'a');
@@ -57,8 +58,11 @@ function createWindow() {
     },
   });
 
-  win.loadFile(path.join(__dirname, '../dist/index.html'));
-  // win.webContents.openDevTools(); // optional for debug
+  // 🌱 Development: load frontend from dev server (Vite/React)
+  win.loadURL('http://localhost:5173');
+
+  // Optionally open devtools
+  win.webContents.openDevTools();
 }
 
 ipcMain.handle('select-directory', async () => {

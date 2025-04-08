@@ -12,7 +12,7 @@ test.describe('Flask Backend Health Check', () => {
     expect(response.status()).toBe(200);
 
     const content = await page.content();
-    console.log('🔍 Backend returned HTML:', content.slice(0, 300));
+    console.log(' Backend returned HTML:', content.slice(0, 300));
 
     expect(content).toContain('<html');
   });
@@ -22,13 +22,13 @@ test.describe('POST /save_state API', () => {
   test.beforeAll(() => {
     if (!fs.existsSync(WORKING_DIR)) {
       fs.mkdirSync(WORKING_DIR, { recursive: true });
-      console.log(`📁 Created test working directory: ${WORKING_DIR}`);
+      console.log(` Created test working directory: ${WORKING_DIR}`);
     }
 
     const dummyCSVPath = path.join(WORKING_DIR, 'compounds.csv');
     if (!fs.existsSync(dummyCSVPath)) {
       fs.writeFileSync(dummyCSVPath, 'ID,SMILES,Name\n1,CCO,Ethanol\n');
-      console.log('🧪 Dummy compounds.csv created');
+      console.log(' Dummy compounds.csv created');
     }
   });
 
@@ -46,9 +46,9 @@ test.describe('POST /save_state API', () => {
     };
 
     const response = await request.post(`${BACKEND_URL}/save_state`, { data: payload });
-    console.log('📡 Response status:', response.status());
+    console.log(' Response status:', response.status());
     const json = await response.json();
-    console.log('✅ Response body:', json);
+    console.log(' Response body:', json);
 
     expect(response.ok()).toBeTruthy(); // <- run *after* reading response
 
@@ -56,7 +56,7 @@ test.describe('POST /save_state API', () => {
     expect(fs.existsSync(statePath)).toBe(true);
 
     const savedState = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
-    console.log('📄 Parsed state.json:', savedState);
+    console.log('Parsed state.json:', savedState);
 
     expect(savedState.working_directory).toBe(WORKING_DIR);
     expect(savedState.mzml_files?.[0]?.adduct).toBe('[M+H]+');
