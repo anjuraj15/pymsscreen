@@ -48,7 +48,15 @@ jobs:
           else
              echo "⚠️ pyopenms not installed: unknown platform"
           fi
-
+      - name: Check current directory and file permissions
+        run: |
+          echo "🔍 Current working directory:"
+          pwd
+          echo "🔍 Checking if web_app.py exists and its permissions:"
+          ls -l web_app.py
+          echo "🔍 Listing dist/ directory:"
+          ls -l dist/
+      
       - name: Build Backend Binary
         shell: bash
         run: |
