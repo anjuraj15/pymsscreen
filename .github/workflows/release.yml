@@ -167,7 +167,8 @@ jobs:
         shell: bash
         run: |
            
-          echo "🚀 Launching backend on: ${{ matrix.os }}"
+          MATRIX_OS="${{ matrix.os }}"
+          echo "🚀 Launching backend on: ${MATRIX_OS}"
           
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             chmod +x dist/web_app_macos-latest
