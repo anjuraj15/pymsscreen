@@ -37,29 +37,30 @@ jobs:
         run: |
           micromamba run -n backend pip install -r requirements.txt
           micromamba run -n backend pip install pyinstaller
-          echo "🔍 Installing pyopenms and rdkit per platform..."
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          echo "🔍 Installing pyopenms per platform..."
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
              micromamba install -n backend -c bioconda -c conda-forge pyopenms
-             micromamba install -n backend -c conda-forge rdkit
-          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
-             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl
-          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+             micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-win_amd64.whl             
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
              micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-macosx_14_0_arm64.whl
           else
              echo "⚠️ pyopenms not installed: unknown platform"
+          fi
 
       - name: Build Backend Binary
         shell: bash
         run: |
           echo "📦 Building PyInstaller binary for: ${{ matrix.os }}"
-
-          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+          
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             echo "🛠️ macOS build with dynamic shared libraries"
             WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/lib/python3.12/site-packages/pyopenms"
 
             ADD_BINARIES=""
+            echo "🔍 Scanning for dylibs in: $WHEEL_LIB_PATH"
             for lib in "$WHEEL_LIB_PATH"/*.dylib; do
-              if [ -f "$lib" ]; then
+              if [[ -f "$lib" ]]; then
                 echo "✅ Adding $(basename "$lib")"
                 ADD_BINARIES+=" --add-binary $lib:."
               fi
@@ -74,7 +75,7 @@ jobs:
               --collect-all rdkit \
               --collect-all flask
 
-          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             echo "🛠️ Windows build with specified pyopenms DLLs"
             WHEEL_LIB_PATH="${MAMBA_ROOT_PREFIX:-$HOME/micromamba}/envs/backend/Lib/site-packages/pyopenms"
 
@@ -95,7 +96,7 @@ jobs:
               vcomp140.dll; do
 
               DLL_PATH="$WHEEL_LIB_PATH/$dll"
-              if [ -f "$DLL_PATH" ]; then
+              if [[ -f "$DLL_PATH" ]]; then
                 echo "✅ Adding $dll"
                 ADD_BINARIES+=" --add-binary $DLL_PATH:."
               else
@@ -109,25 +110,19 @@ jobs:
               --collect-all flask
 
           else
-            echo "🛠️ Linux build with extended RDKit debug"
-            micromamba run -n backend pyinstaller --clean \
-              --log-level DEBUG --onedir \
-              --name web_app web_app.py \
-              --hidden-import rdkit \
-              --hidden-import rdkit.Chem \
-              --hidden-import rdkit.rdBase \
-              --hidden-import rdkit.DataStructs \
-              --hidden-import rdkit.Geometry \
+            echo "🛠️ Standard build (no extra binaries)"
+            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
+              --onefile --name web_app web_app.py \
               --collect-all rdkit \
               --collect-all flask
           fi
 
           mkdir -p public/backend
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             mv dist/web_app public/backend/web_app_linux
-          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             mv dist/web_app public/backend/web_app_macos
-          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             mv dist/web_app.exe public/backend/web_app.exe
           fi
 
@@ -152,25 +147,16 @@ jobs:
       - name: Build React App
         run: npm run build
 
-      - name: Launch Backend (macOS)
-        if: matrix.os == 'macos-latest'
+      - name: Launch Backend
         shell: bash
         run: |
-          ./public/backend/web_app_macos &
-          npx wait-on http://localhost:5000
-
-      - name: Launch Backend (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          ./public/backend/web_app_linux &
-          npx wait-on http://localhost:5000
-
-      - name: Launch Backend (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: bash
-        run: |
-          start /B public\\backend\\web_app.exe
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            ./public/backend/web_app_macos &
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            ./public/backend/web_app_linux &
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            start /B public\\\\backend\\\\web_app.exe
+          fi
           npx wait-on http://localhost:5000
 
       - name: Run Playwright Test (backend readiness)
