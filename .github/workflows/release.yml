@@ -37,7 +37,7 @@ jobs:
       - name: Install Python dependencies
         shell: bash
         run: |
-          micromamba create -n backend python -y
+          micromamba create -n backend python=3.8.10 -y
           micromamba run -n backend pip install -r requirements.txt
           micromamba run -n backend pip install pyinstaller
           echo "🔍 Installing pyopenms per platform..."
