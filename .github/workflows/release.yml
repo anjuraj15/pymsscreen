@@ -154,19 +154,22 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-node-
 
+
       - name: Install Frontend Dependencies
         run: npm ci
+
 
       - name: Install Playwright (required for tests)
         run: npx playwright install --with-deps
 
+
       - name: Build React App
         run: npm run build
+
 
       - name: Launch Backend
         shell: bash
         run: |
-           
           MATRIX_OS="${{ matrix.os }}"
           echo "🚀 Launching backend on: ${MATRIX_OS}"
           
