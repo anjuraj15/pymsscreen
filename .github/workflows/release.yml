@@ -40,6 +40,7 @@ jobs:
           micromamba create -n backend python=3.8.10 -y
           micromamba run -n backend pip install -r requirements.txt
           micromamba run -n backend pip install pyinstaller pyinstaller-hooks-contrib
+          micromamba run -n backend pyinstaller --clean --hidden-import=pandas --hidden-import=pandas.core.indexers --hidden-import=pandas.core.arrays.categorical web_app.py
           echo "🔍 Installing pyopenms per platform..."
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
              micromamba update -n base micromamba -c conda-forge micromamba
