@@ -155,15 +155,15 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             echo "Launching backend for macOS"
-            ./dist/web_app/web_app_macos &
+            dist/web_app &
             npx wait-on http://localhost:5000
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             echo "Launching backend for Linux"
-            ./dist/web_app/web_app &
+            dist/web_app &
             npx wait-on http://localhost:5000
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             echo "Launching backend for Windows"
-            start /B dist\\\\web_app\\\\web_app.exe
+            start /B dist\\\\web_app.exe
             npx wait-on http://localhost:5000
           fi
 
