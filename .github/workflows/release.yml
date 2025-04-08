@@ -45,7 +45,7 @@ jobs:
 
           if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
              
-             micromamba install -n backend -c conda-forge -c bioconda pyopenms=3.3.0 rdkit -y 
+             micromamba install -n backend -c conda-forge -c bioconda pyopenms=3.3.0 rdkit=2023.09.5 -y 
 
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
 
@@ -83,7 +83,7 @@ jobs:
             done
 
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
-            ADD_DATAS="--add-data=\"${OPENMS_DATA_PATH}:share/OpenMS\""
+            ADD_DATAS=--add-data=${OPENMS_DATA_PATH}:share/OpenMS
             echo "📁 OpenMS data path: $OPENMS_DATA_PATH"
 
             micromamba run -n backend pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
@@ -140,11 +140,20 @@ jobs:
 
           # Check if the `web_app` binary is in the dist/web_app directory
           
-          if [[ -f "./dist/web_app" || -f "./dist/web_app.exe" ]]; then
-            echo "✅ Binary build success."
+          echo "🔍 Checking for final binary:"
+          ls -l ./web_app* || true
+
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            BIN="./web_app.exe"
           else
-            echo "❌ Binary missing after build!"
-            exit 1
+            BIN="./web_app"
+          fi
+
+          if [[ -f "$BIN" ]]; then
+             echo "✅ Binary build success: $BIN"
+          else
+             echo "❌ Binary missing after build!"
+             exit 1
           fi
       
 
