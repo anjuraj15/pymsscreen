@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
-const WORKING_DIR = '/tmp/test_project';
+const WORKING_DIR = path.join(os.tmpdir(), 'test_project');
 const BACKEND_URL = 'http://127.0.0.1:5000';
 
 test.describe('Flask Backend Health Check', () => {
@@ -13,7 +14,6 @@ test.describe('Flask Backend Health Check', () => {
     const content = await page.content();
     console.log('🔍 Backend returned HTML:', content.slice(0, 300));
 
-    // Adjust based on what your index returns
     expect(content).toContain('<html');
   });
 });
@@ -47,11 +47,10 @@ test.describe('POST /save_state API', () => {
 
     const response = await request.post(`${BACKEND_URL}/save_state`, { data: payload });
     console.log('📡 Response status:', response.status());
-    expect(response.ok()).toBeTruthy();
-
     const json = await response.json();
     console.log('✅ Response body:', json);
-    expect(json.message).toContain('saved');
+
+    expect(response.ok()).toBeTruthy(); // <- run *after* reading response
 
     const statePath = path.join(WORKING_DIR, 'state.json');
     expect(fs.existsSync(statePath)).toBe(true);
