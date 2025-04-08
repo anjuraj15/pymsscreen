@@ -108,7 +108,14 @@ jobs:
           else
             echo "🛠️ Standard build (no extra binaries)"
             micromamba run -n backend pyinstaller --clean --log-level DEBUG \
-             --onefile --name web_app web_app.py \
+             --name web_app web_app.py \
+             --onedir \
+             --debug import \
+             --hidden-import rdkit \
+             --hidden-import rdkit.Chem \
+             --hidden-import rdkit.rdBase \
+             --hidden-import rdkit.DataStructs \
+             --hidden-import rdkit.Geometry \
              --collect-all rdkit \
              --collect-all flask
           fi
