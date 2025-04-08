@@ -47,7 +47,6 @@ jobs:
              micromamba run -n backend pip install wheels/pyopenms-3.3.0-cp312-cp312-macosx_14_0_arm64.whl
           else
              echo "⚠️ pyopenms not installed: unknown platform"
-          fi
 
       - name: Build Backend Binary
         shell: bash
@@ -111,10 +110,9 @@ jobs:
 
           else
             echo "🛠️ Linux build with extended RDKit debug"
-            micromamba run -n backend pyinstaller --clean --log-level DEBUG \
+            micromamba run -n backend pyinstaller --clean \
+              --log-level DEBUG --onedir \
               --name web_app web_app.py \
-              --onedir \
-              --debug import \
               --hidden-import rdkit \
               --hidden-import rdkit.Chem \
               --hidden-import rdkit.rdBase \
@@ -132,3 +130,81 @@ jobs:
           elif [ "${{ matrix.os }}" = "windows-latest" ]; then
             mv dist/web_app.exe public/backend/web_app.exe
           fi
+
+      - name: Make Backend Executable (Non-Windows)
+        if: matrix.os != 'windows-latest'
+        run: chmod +x public/backend/web_app_*
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ matrix.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ matrix.os }}-node-
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Install Playwright (required for tests)
+        run: npx playwright install --with-deps
+
+      - name: Build React App
+        run: npm run build
+
+      - name: Launch Backend (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          ./public/backend/web_app_macos &
+          npx wait-on http://localhost:5000
+
+      - name: Launch Backend (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          ./public/backend/web_app_linux &
+          npx wait-on http://localhost:5000
+
+      - name: Launch Backend (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          start /B public\\backend\\web_app.exe
+          npx wait-on http://localhost:5000
+
+      - name: Run Playwright Test (backend readiness)
+        run: npm run test:playwright
+
+      - name: Build Electron App
+        run: npm run build:electron -- --${{ matrix.arch }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload Platform Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyms-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            public/backend/
+            dist/
+            release/
+            out/
+            *.exe
+            *.AppImage
+            *.dmg
+
+  release:
+    needs: build-platform
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: bundles/
+
+      - name: List Bundles
+        run: |
+          echo "📦 Final App Bundles:"
+          ls -R bundles/
