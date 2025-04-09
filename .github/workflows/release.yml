@@ -156,7 +156,7 @@ jobs:
                  fi
                fi
 
-               echo "✅ Final contents of public/backend:"
+               echo "Final contents of public/backend:"
                ls -lh public/backend
 
       - name: Build Frontend +  Electron App
@@ -166,43 +166,49 @@ jobs:
 
       - name: Smoke Test Electron App EXE
         if: matrix.os == 'windows-latest' 
-        shell: cmd
+        shell: bash
         run: |
            echo " Checking for EXE..."
-           if not exist dist\\pyms-win32-x64.exe (
-            echo  EXE not found!
-            dir dist
-            exit /b 1
-           )
-           echo "Launching EXE for smoke test..."
-           start "" dist\\pyms-win32-x64.exe
-           timeout /t 10 >nul
+           if [[ ! -f dist/pyms-win32-x64.exe ]]; then
+              echo " EXE not found!"
+              ls -l dist
+              exit 1
+           fi
+
+           echo " Launching Electron EXE in background..."
+           ./dist/pyms-win32-x64.exe > electron-output.log 2>&1 &
+           ELECTRON_PID=$!
+
+           sleep 10
 
            echo " Checking backend log for runtime errors..."
-           set "LOGFILE=%USERPROFILE%\\AppData\\Roaming\\pyms-app\\flask-backend.log"
-           if not exist "%LOGFILE%" (
-            echo  Log file not found. App may have failed silently.
-            exit /b 1
-           )
+           LOGFILE="$USERPROFILE/AppData/Roaming/pyms-app/flask-backend.log"
 
-           echo "📄 Scanning log file: %LOGFILE%"
-           findstr /i "error exception uncaught syntax reference type fatal failed" "%LOGFILE%"
-           if %errorlevel% equ 0 (
-            echo  Detected a JavaScript runtime error in log!
-            echo "------ LOG START ------"
-            type "%LOGFILE%"
-            echo "------ LOG END --------"
-            exit /b 1
-           )
+           if [[ -f "$LOGFILE" ]]; then
+             echo " Found backend log. Checking for errors..."
+             if grep -Ei 'error|exception|uncaught|syntax|reference|type|fatal|failed' "$LOGFILE"; then
+                echo " Runtime error detected in backend log!"
+                cat "$LOGFILE"
+                kill $ELECTRON_PID || true
+                exit 1
+             fi
+            else
+               echo "⚠️ Log file not found. Checking Electron output..."
+               if grep -Ei 'error|exception|uncaught|syntax|reference|type|fatal|failed' electron-output.log; then
+                 echo " Electron runtime error detected!"
+                 cat electron-output.log
+                 kill $ELECTRON_PID || true
+                 exit 1
+               fi
+               echo " No log or output found. App may have failed silently."
+               kill $ELECTRON_PID || true
+               exit 1
+            fi
 
-           echo " Killing Electron App (if running)..."
-           taskkill /f /im pyms-win32-x64.exe || echo "Not running"
-
-           echo " EXE passed runtime test with no fatal errors."
-
-           
-
-
+            echo "Cleaning up Electron process..."
+            kill $ELECTRON_PID || true
+            echo "EXE passed smoke test!"
+            
       - name: Upload Platform Bundle
         uses: actions/upload-artifact@v4
         with:
