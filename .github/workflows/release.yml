@@ -54,7 +54,7 @@ jobs:
         run: |
           PYINSTALLER_COMMON="--clean --log-level DEBUG --onefile --name web_app web_app.py \
             --collect-all rdkit --collect-all flask --collect-all pandas --collect-all plotly \
-            --collect-all numpy --collect-submodules numpy"
+            --collect-all numpy --collect-submodules numpy --collect-all waitress"
 
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             WHEEL_LIB_PATH="venv/lib/python3.11/site-packages/pyopenms"
@@ -109,6 +109,15 @@ jobs:
 
           chmod +x "$BIN" || true
           "$BIN" &
+
+          "$BIN" > backend.log 2>&1 &
+          BACKEND_PID=$!
+
+          echo "🧾 Backend launched with PID $BACKEND_PID"
+          sleep 5
+
+          echo "📄 Dumping backend.log..."
+          cat backend.log || true          
 
           echo " Waiting for backend to start on 127.0.0.1:5000..."
           sleep 2
