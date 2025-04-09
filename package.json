@@ -31,6 +31,7 @@
   "directories": {
     "buildResources": "electron/icons"
   },
+  "artifactName": "pyms-${platform}-${arch}.${ext}",
   "win": {
     "target": "nsis",
     "legalTrademarks": "© 2025 University of Luxembourg"
