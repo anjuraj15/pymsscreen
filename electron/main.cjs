@@ -14,7 +14,7 @@ let flaskProcess;
     : path.join(__dirname, '..', 'public', 'backend', binaryName);
 
   return binaryPath;
-}
+
 
 function startFlask() {
 
