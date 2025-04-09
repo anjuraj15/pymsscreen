@@ -94,21 +94,28 @@ jobs:
         run: |
           echo " Launching backend on: ${{ matrix.os }}"
 
-          BIN="./web_app"
-          [[ "${{ matrix.os }}" == "windows-latest" ]] && BIN="./web_app.exe"
-
-          export OPENMS_DATA_PATH=share/OpenMS
-          [[ "${{ matrix.os }}" == "windows-latest" ]] && export OPENMS_DATA_PATH=share\\OpenMS
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            BIN="./web_app.exe"
+            export OPENMS_DATA_PATH=share\\OpenMS
+          
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            BIN="./web_app_macos"
+            export OPENMS_DATA_PATH=share/OpenMS
+          
+          else
+            BIN="./web_app_linux"
+            export OPENMS_DATA_PATH=share/OpenMS
+          fi
 
           chmod +x "$BIN" || true
           "$BIN" &
 
-          echo "⏳ Waiting for backend to start on 127.0.0.1:5000..."
+          echo " Waiting for backend to start on 127.0.0.1:5000..."
           sleep 2
           npx wait-on --timeout=180000 --interval=5000 http://127.0.0.1:5000 || {
             echo "Backend failed to start within timeout."; exit 1;
           }
-          echo " Backend is live!"
+          echo "  Backend is live!"
 
       - name: Install Playwright Test Runner (backend readiness)
         run: npm install -D playwright @playwright/test
