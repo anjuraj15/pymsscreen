@@ -7,32 +7,27 @@ const { pathToFileURL } = require('url');
 
 let flaskProcess;
 
-
-  const isProd = app.isPackaged;
-  const binaryPath = isProd
-    ? path.join(process.resourcesPath, 'backend', binaryName)
-    : path.join(__dirname, '..', 'public', 'backend', binaryName);
-
-  return binaryPath;
-
-
-function startFlask() {
-
-  function getBackendBinaryPath() {
-    if (app.isPackaged) {
-      return path.join(process.resourcesPath, 'backend', 'web_app');
-    }
-  
-    const platformBinaryName = {
-      win32: 'web_app.exe',
-      darwin: 'web_app_macos',
-      linux: 'web_app_linux'
-    }[os.platform()];
-  
-    return path.join(__dirname, '..', 'public', 'backend', platformBinaryName);
+//  Platform-aware backend binary path
+function getBackendBinaryPath() {
+  if (app.isPackaged) {
+    return path.join(
+      process.resourcesPath,
+      'backend',
+      os.platform() === 'win32' ? 'web_app.exe' : 'web_app'
+    );
   }
 
-  
+  const platformBinaryName = {
+    win32: 'web_app.exe',
+    darwin: 'web_app_macos',
+    linux: 'web_app_linux'
+  }[os.platform()] || 'web_app';
+
+  return path.join(__dirname, '..', 'public', 'backend', platformBinaryName);
+}
+
+//  Launch backend server (Flask or Python binary)
+function startFlask() {
   const backendPath = getBackendBinaryPath();
   const shell = os.platform() === 'win32' || os.platform() === 'darwin';
 
@@ -56,7 +51,7 @@ function startFlask() {
   }
 }
 
-
+// 🪟 Create the Electron window
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
@@ -71,14 +66,14 @@ function createWindow() {
 
   if (isDev) {
     win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools(); // Only in development
+    win.webContents.openDevTools(); // Optional: dev tools
   } else {
-    const { pathToFileURL } = require('url');
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
     win.loadURL(pathToFileURL(indexPath).toString());
   }
 }
 
+//  Directory selection via dialog
 ipcMain.handle('select-directory', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
@@ -86,16 +81,19 @@ ipcMain.handle('select-directory', async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
+//  App ready
 app.whenReady().then(() => {
   startFlask();
   createWindow();
 });
 
+//  Kill backend on all window close
 app.on('window-all-closed', () => {
   if (flaskProcess) flaskProcess.kill();
   if (process.platform !== 'darwin') app.quit();
 });
 
+//  Kill backend on quit
 app.on('before-quit', () => {
   if (flaskProcess) flaskProcess.kill();
 });

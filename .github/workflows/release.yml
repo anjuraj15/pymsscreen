@@ -124,6 +124,45 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Smoke Test Electron App EXE
+        if: matrix.os == 'windows-latest' 
+        shell: cmd
+        run: |
+           echo " Checking for EXE..."
+           if not exist dist\\pyms-app.exe (
+            echo  EXE not found!
+            dir dist
+            exit /b 1
+           )
+           echo "Launching EXE for smoke test..."
+           start "" dist\\pyms-app.exe
+           timeout /t 10 >nul
+
+           echo " Checking backend log for runtime errors..."
+           set "LOGFILE=%USERPROFILE%\\AppData\\Roaming\\pyms-app\\flask-backend.log"
+           if not exist "%LOGFILE%" (
+            echo  Log file not found. App may have failed silently.
+            exit /b 1
+           )
+
+           echo "📄 Scanning log file: %LOGFILE%"
+           findstr /i "error exception uncaught syntax reference type fatal failed" "%LOGFILE%"
+           if %errorlevel% equ 0 (
+            echo  Detected a JavaScript runtime error in log!
+            echo "------ LOG START ------"
+            type "%LOGFILE%"
+            echo "------ LOG END --------"
+            exit /b 1
+           )
+
+           echo " Killing Electron App (if running)..."
+           taskkill /f /im pyms-app.exe || echo "Not running"
+
+           echo " EXE passed runtime test with no fatal errors."
+
+           
+
+
       - name: Upload Platform Bundle
         uses: actions/upload-artifact@v4
         with:
