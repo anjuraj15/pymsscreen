@@ -12,11 +12,11 @@ function getBackendBinaryPath() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'backend', 'web_app');
   }
-  
+
   const platformBinaryName = {
     win32: 'web_app.exe',
     darwin: 'web_app_macos',
-    linux: 'web_app_linux'
+    linux: 'web_app_linux',
   }[os.platform()] || 'web_app';
 
   return path.join(__dirname, '..', 'public', 'backend', platformBinaryName);
@@ -29,10 +29,17 @@ function startFlask() {
 
   const logDir = app.getPath('userData');
   const logFile = path.join(logDir, 'flask-backend.log');
+
+  // 💡 Ensure the directory exists (fixes rare CI issues)
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+
   const out = fs.openSync(logFile, 'a');
   const err = fs.openSync(logFile, 'a');
 
   console.log(`[Electron] Starting backend from: ${backendPath}`);
+  console.log(`[Electron] Logging to: ${logFile}`);
 
   try {
     flaskProcess = spawn(backendPath, [], {
@@ -41,14 +48,15 @@ function startFlask() {
       stdio: ['ignore', out, err],
     });
 
-
-  flaskProcess.on('error', (err) => {
-    console.error(`[Electron] Failed to spawn: ${err.message}`);
-  });
+    flaskProcess.on('error', (err) => {
+      console.error(`[Electron] Failed to spawn: ${err.message}`);
+      fs.appendFileSync(logFile, `❌ Spawn error: ${err.message}\n`);
+    });
 
     flaskProcess.unref();
   } catch (e) {
-    console.error(`[Electron] exception while spawning backend: ${e}`);
+    console.error(`[Electron] Exception during spawn: ${e}`);
+    fs.appendFileSync(logFile, `❌ Exception during spawn: ${e.message}\n`);
   }
 }
 

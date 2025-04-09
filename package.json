@@ -21,49 +21,28 @@
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {
-    "extraFiles": [
-      {
-        "from": "public/backend",
-        "to": "backend",
-        "filter": [
-          "web_app*"
-        ]
-      }
-    ],
-    "directories": {
-      "buildResources": "electron/icons"
-    },
-    "win": {
-      "target": "nsis",
-      "legalTrademarks": "\u00a9 2025 University of Luxembourg",
-      "artifactName": "pyms-${platform}-${arch}.${ext}",
-      "extraFiles": [
-        {
-          "from": "public/backend/web_app.exe",
-          "to": "backend/web_app"
-        }
-      ]
-    },
-    "mac": {
-      "target": "dmg",
-      "extraFiles": [
-        {
-          "from": "public/backend/web_app_macos",
-          "to": "backend/web_app"
-        }
-      ]
-    },
-    "linux": {
-      "target": "AppImage",
-      "extraFiles": [
-        {
-          "from": "public/backend/web_app_linux",
-          "to": "backend/web_app"
-        }
-      ]
+  "extraFiles": [
+    {
+      "from": "public/backend",
+      "to": "backend",
+      "filter": ["web_app*"]
     }
+  ],
+  "directories": {
+    "buildResources": "electron/icons"
   },
-  "dependencies": {
+  "win": {
+    "target": "nsis",
+    "legalTrademarks": "© 2025 University of Luxembourg"
+  },
+  "mac": {
+    "target": "dmg"
+  },
+  "linux": {
+    "target": "AppImage"
+  }
+},
+ "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",
     "chroma-js": "^3.1.2",
