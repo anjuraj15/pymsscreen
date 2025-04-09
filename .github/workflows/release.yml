@@ -129,13 +129,13 @@ jobs:
         shell: cmd
         run: |
            echo " Checking for EXE..."
-           if not exist dist\\pyms-app.exe (
+           if not exist dist\\pyms-win32-x64.exe (
             echo  EXE not found!
             dir dist
             exit /b 1
            )
            echo "Launching EXE for smoke test..."
-           start "" dist\\pyms-app.exe
+           start "" dist\\pyms-win32-x64.exe
            timeout /t 10 >nul
 
            echo " Checking backend log for runtime errors..."
@@ -156,7 +156,7 @@ jobs:
            )
 
            echo " Killing Electron App (if running)..."
-           taskkill /f /im pyms-app.exe || echo "Not running"
+           taskkill /f /im pyms-win32-x64.exe || echo "Not running"
 
            echo " EXE passed runtime test with no fatal errors."
 
