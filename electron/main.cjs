@@ -7,10 +7,6 @@ const { pathToFileURL } = require('url');
 
 let flaskProcess;
 
-function getBackendBinaryPath() {
-  const binaryPath = path.join(process.resourcesPath, 'backend', 'web_app');
-  return binaryPath;
-}
 
   const isProd = app.isPackaged;
   const binaryPath = isProd
@@ -23,17 +19,20 @@ function getBackendBinaryPath() {
 function startFlask() {
 
   function getBackendBinaryPath() {
-    const binaryPath = app.isPackaged
-      ? path.join(process.resourcesPath, 'backend', 'web_app')
-      : path.join(__dirname, '..', 'public', 'backend', {
-          win32: 'web_app.exe',
-          darwin: 'web_app_macos',
-          linux: 'web_app_linux'
-        }[os.platform()]);
+    if (app.isPackaged) {
+      return path.join(process.resourcesPath, 'backend', 'web_app');
+    }
   
-    return binaryPath;
+    const platformBinaryName = {
+      win32: 'web_app.exe',
+      darwin: 'web_app_macos',
+      linux: 'web_app_linux'
+    }[os.platform()];
+  
+    return path.join(__dirname, '..', 'public', 'backend', platformBinaryName);
   }
 
+  
   const backendPath = getBackendBinaryPath();
   const shell = os.platform() === 'win32' || os.platform() === 'darwin';
 

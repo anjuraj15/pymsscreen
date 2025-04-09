@@ -18,45 +18,50 @@
     "build:app": "npm run build && npm run build:electron",
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
- "build": {
-  "extraFiles": [
-    {
-      "from": "public/backend",
-      "to": "backend",
-      "filter": ["web_app*"]
+  "build": {
+    "extraFiles": [
+      {
+        "from": "public/backend",
+        "to": "backend",
+        "filter": [
+          "web_app*"
+        ]
+      }
+    ],
+    "directories": {
+      "buildResources": "electron/icons"
+    },
+    "win": {
+      "target": "nsis",
+      "publisherName": "Anjana Elapavalore",
+      "legalTrademarks": "© 2025 University of Luxembourg",
+      "artifactName": "pyms-${platform}-${arch}.${ext}",
+      "extraFiles": [
+        {
+          "from": "public/backend/web_app.exe",
+          "to": "backend/web_app"
+        }
+      ]
+    },
+    "mac": {
+      "target": "dmg",
+      "extraFiles": [
+        {
+          "from": "public/backend/web_app_macos",
+          "to": "backend/web_app"
+        }
+      ]
+    },
+    "linux": {
+      "target": "AppImage",
+      "extraFiles": [
+        {
+          "from": "public/backend/web_app_linux",
+          "to": "backend/web_app"
+        }
+      ]
     }
-  ],
-  "directories": {
-    "buildResources": "electron/icons"
   },
-  "win": {
-    "target": "nsis",
-    "extraFiles": [
-      {
-        "from": "public/backend/web_app.exe",
-        "to": "backend/web_app"
-      }
-    ]
-  },
-  "mac": {
-    "target": "dmg",
-    "extraFiles": [
-      {
-        "from": "public/backend/web_app_macos",
-        "to": "backend/web_app"
-      }
-    ]
-  },
-  "linux": {
-    "target": "AppImage",
-    "extraFiles": [
-      {
-        "from": "public/backend/web_app_linux",
-        "to": "backend/web_app"
-      }
-    ]
-  }
-},
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",
@@ -84,7 +89,7 @@
     "autoprefixer": "^10.4.21",
     "electron": "^35.1.4",
     "electron-builder": "^26.0.12",
-    "eslint": "^9.21.0",
+    "eslint": "^9.24.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
