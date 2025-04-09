@@ -21,27 +21,20 @@
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {
-  "extraFiles": [
-    {
-      "from": "public/backend",
-      "to": "backend",
-      "filter": ["web_app*"]
-    }
-  ],
-  "directories": {
-    "buildResources": "electron/icons"
+    "extraFiles": [
+  {
+    "from": "public/backend/web_app.exe",
+    "to": "backend/web_app.exe"
   },
-  "artifactName": "pyms-${platform}-${arch}.${ext}",
-  "win": {
-    "target": "nsis",
-    "legalTrademarks": "© 2025 University of Luxembourg"
+  {
+    "from": "public/backend/web_app_linux",
+    "to": "backend/web_app_linux"
   },
-  "mac": {
-    "target": "dmg"
-  },
-  "linux": {
-    "target": "AppImage"
+  {
+    "from": "public/backend/web_app_macos",
+    "to": "backend/web_app_macos"
   }
+]
 },
  "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",

@@ -9,9 +9,18 @@ let flaskProcess;
 
 //  Platform-aware backend binary path
 function getBackendBinaryPath() {
+  const platformBinaryName = {
+    win32: 'web_app.exe',
+    darwin: 'web_app_macos',
+    linux: 'web_app_linux',
+  }[os.platform()] || 'web_app';
+
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'backend', 'web_app');
+    return path.join(process.resourcesPath, 'backend', platformBinaryName);
   }
+
+  return path.join(__dirname, '..', 'public', 'backend', platformBinaryName);
+}
 
   const platformBinaryName = {
     win32: 'web_app.exe',
