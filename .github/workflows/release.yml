@@ -126,6 +126,39 @@ jobs:
       - name: Run Playwright Test (backend readiness)
         run: npm run test:playwright
 
+      - name: Copy Backend Binary to Electron Public Folder
+        shell: bash
+        run: |
+           echo " Preparing backend binary for Electron..."
+
+           mkdir -p public/backend
+
+               if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+                 if [[ -f "web_app.exe" ]]; then
+                    cp web_app.exe public/backend/web_app.exe
+                 else
+                   echo " web_app.exe not found!"
+                   exit 1
+                 fi
+               elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+                 if [[ -f "web_app_macos" ]]; then
+                   cp web_app_macos public/backend/web_app
+                 else
+                   echo " web_app_macos not found!"
+                   exit 1
+                 fi
+               elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+                 if [[ -f "web_app_linux" ]]; then
+                    cp web_app_linux public/backend/web_app
+                 else
+                   echo " web_app_linux not found!"
+                   exit 1
+                 fi
+               fi
+
+               echo "✅ Final contents of public/backend:"
+               ls -lh public/backend
+
       - name: Build Frontend +  Electron App
         run:  npm run build:app -- --${{ matrix.arch }}
         env:
