@@ -10,13 +10,9 @@ let flaskProcess;
 //  Platform-aware backend binary path
 function getBackendBinaryPath() {
   if (app.isPackaged) {
-    return path.join(
-      process.resourcesPath,
-      'backend',
-      os.platform() === 'win32' ? 'web_app.exe' : 'web_app'
-    );
+    return path.join(process.resourcesPath, 'backend', 'web_app');
   }
-
+  
   const platformBinaryName = {
     win32: 'web_app.exe',
     darwin: 'web_app_macos',
@@ -45,9 +41,14 @@ function startFlask() {
       stdio: ['ignore', out, err],
     });
 
+
+  flaskProcess.on('error', (err) => {
+    console.error(`[Electron] Failed to spawn: ${err.message}`);
+  });
+
     flaskProcess.unref();
   } catch (e) {
-    console.error(`[Electron] Failed to spawn backend: ${e}`);
+    console.error(`[Electron] exception while spawning backend: ${e}`);
   }
 }
 
