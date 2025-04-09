@@ -18,53 +18,45 @@
     "build:app": "npm run build && npm run build:electron",
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
-  "build": {
-    "appId": "com.pymsscreen",
-    "productName": "PyMSscreen",
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
+ "build": {
+  "extraFiles": [
+    {
+      "from": "public/backend",
+      "to": "backend",
+      "filter": ["web_app*"]
+    }
+  ],
+  "directories": {
+    "buildResources": "electron/icons"
+  },
+  "win": {
+    "target": "nsis",
     "extraFiles": [
       {
-        "from": "public/backend",
-        "to": "backend",
-        "filter": [
-          "web_app*"
-        ]
+        "from": "public/backend/web_app.exe",
+        "to": "backend/web_app"
       }
-    ],
-    "directories": {
-      "buildResources": "electron/icons"
-    },
-    "win": {
-      "target": "nsis",
-      "extraFiles": [
-        {
-          "from": "public/backend/web_app.exe",
-          "to": "backend/web_app.exe"
-        }
-      ]
-    },
-    "mac": {
-      "target": "dmg",
-      "extraFiles": [
-        {
-          "from": "public/backend/web_app_macos",
-          "to": "backend/web_app"
-        }
-      ]
-    },
-    "linux": {
-      "target": "AppImage",
-      "extraFiles": [
-        {
-          "from": "public/backend/web_app_linux",
-          "to": "backend/web_app"
-        }
-      ]
-    }
+    ]
   },
+  "mac": {
+    "target": "dmg",
+    "extraFiles": [
+      {
+        "from": "public/backend/web_app_macos",
+        "to": "backend/web_app"
+      }
+    ]
+  },
+  "linux": {
+    "target": "AppImage",
+    "extraFiles": [
+      {
+        "from": "public/backend/web_app_linux",
+        "to": "backend/web_app"
+      }
+    ]
+  }
+},
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",
