@@ -21,21 +21,16 @@
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {
-    "extraFiles": [
-  {
-    "from": "public/backend/web_app.exe",
-    "to": "backend/web_app.exe"
+    "extraResources": [
+      {
+        "from": "public/backend",
+        "to": "backend"
+      }
+    ],
+    "asarUnpack": [
+      "backend/**"
+    ]
   },
-  {
-    "from": "public/backend/web_app_linux",
-    "to": "backend/web_app_linux"
-  },
-  {
-    "from": "public/backend/web_app_macos",
-    "to": "backend/web_app_macos"
-  }
-]
-},
  "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",
