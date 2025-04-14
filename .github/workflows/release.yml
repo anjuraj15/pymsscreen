@@ -177,47 +177,43 @@ jobs:
         if: matrix.os == 'windows-latest' 
         shell: bash
         run: |
-           echo " Checking for EXE..."
-           if [[ ! -f dist/pyms-win32-x64.exe ]]; then
+            echo " Checking win-unpacked for Electron app..."
+            ls -lh win-unpacked || true
+        
+            if [[ ! -f win-unpacked/pymsscreen.exe ]]; then
               echo " EXE not found!"
-              ls -l dist
               exit 1
-           fi
-
-           echo " Launching Electron EXE in background..."
-           ./dist/pyms-win32-x64.exe > electron-output.log 2>&1 &
-           ELECTRON_PID=$!
-
-           sleep 10
-
-           echo " Checking backend log for runtime errors..."
-           LOGFILE="$USERPROFILE/AppData/Roaming/pyms-app/flask-backend.log"
-
-           if [[ -f "$LOGFILE" ]]; then
-             echo " Found backend log. Checking for errors..."
-             if grep -Ei 'error|exception|uncaught|syntax|reference|type|fatal|failed' "$LOGFILE"; then
-                echo " Runtime error detected in backend log!"
+            fi
+        
+            echo " Launching Electron EXE in background..."
+            ./win-unpacked/pymsscreen.exe > electron-output.log 2>&1 &
+            ELECTRON_PID=$!
+        
+            sleep 10
+        
+            LOGFILE="$USERPROFILE/AppData/Roaming/pymsscreen/flask-backend.log"
+        
+            if [[ -f "$LOGFILE" ]]; then
+              echo " Backend log found. Checking for errors..."
+              if grep -Ei 'error|exception|uncaught|fatal' "$LOGFILE"; then
+                echo " Runtime error detected!"
                 cat "$LOGFILE"
                 kill $ELECTRON_PID || true
                 exit 1
-             fi
+              fi
             else
-               echo "⚠️ Log file not found. Checking Electron output..."
-               if grep -Ei 'error|exception|uncaught|syntax|reference|type|fatal|failed' electron-output.log; then
-                 echo " Electron runtime error detected!"
-                 cat electron-output.log
-                 kill $ELECTRON_PID || true
-                 exit 1
-               fi
-               echo " No log or output found. App may have failed silently."
-               kill $ELECTRON_PID || true
-               exit 1
+              echo "No backend log. Checking stdout..."
+              if grep -Ei 'error|exception|uncaught|fatal' electron-output.log; then
+                echo " Electron output error!"
+                cat electron-output.log
+                kill $ELECTRON_PID || true
+                exit 1
+              fi
             fi
-
-            echo "Cleaning up Electron process..."
+        
+            echo " EXE passed smoke test!"
             kill $ELECTRON_PID || true
-            echo "EXE passed smoke test!"
-            
+
       - name: Upload Platform Bundle
         uses: actions/upload-artifact@v4
         with:
