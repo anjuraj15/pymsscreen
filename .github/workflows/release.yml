@@ -89,6 +89,11 @@ jobs:
           echo " Checking for final binary:"
           ls -l ./web_app* || true
 
+          # ✅ DELETE VENV to avoid Electron packaging error
+          echo "Cleaning up virtual environment..."
+          rm -rf venv
+
+
       - name: Preinstall wait-on
         run: npm install -g wait-on
       
