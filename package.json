@@ -21,16 +21,23 @@
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {
+  "appId": "com.pyms.screen",                         
+  "productName": "pyMSscreen",                        
+  "directories": {
+    "output": "release",                              
+    "buildResources": "electron"                      
+  },
   "files": [
     "!venv",
     "!venv/**",
-    "electron",
+    "electron/main.cjs",
+    "electron/preload.js",
     "dist",   
     "public"
   ],
   "extraResources": [
     {
-      "from": "../public/backend",
+      "from": "public/backend",
       "to": "backend"
     }
   ],

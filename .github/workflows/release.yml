@@ -97,6 +97,10 @@ jobs:
       - name: Preinstall wait-on
         run: npm install -g wait-on  
       
+      - name: Kill any leftover backend processes
+        run: |
+          pkill -f web_app || true
+
       - name: Launch Backend
         shell: bash
         run: |
@@ -175,6 +179,9 @@ jobs:
 
                echo "Final contents of public/backend:"
                ls -lh public/backend
+
+      - name: Make backend binary executable
+        run: chmod +x public/backend/web_app*
 
       - name: Build Frontend +  Electron App
         run:  npm run build:app -- --${{ matrix.arch }}
