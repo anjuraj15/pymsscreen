@@ -180,7 +180,10 @@ jobs:
         run: |
           chmod +x public/backend/web_app*
           echo "Verifying backend binary inside bundle..."
-          ls -lh release/linux-unpacked/resources/backend/ || true
+          find release -path "*/resources/backend/*" -type f || {
+          echo "Backend not found in release bundle";
+          exit 1;
+          }
  
 
       - name: Build Frontend +  Electron App

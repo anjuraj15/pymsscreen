@@ -35,6 +35,7 @@
     "dist",   
     "public"
   ],
+  "asar": true,
   "asarUnpack": ["backend/**"],
   "extraResources": [
     {
