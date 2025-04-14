@@ -246,7 +246,7 @@ jobs:
               echo "Core pattern set to: $(cat /proc/sys/kernel/core_pattern)"
              
       
-              - name: Trace Electron with strace (Linux only)
+      - name: Trace Electron with strace (Linux only)  
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
@@ -273,7 +273,7 @@ jobs:
 
               echo "Checking for core dump in /tmp:"
               ls -lh /tmp/core.* || echo "No core dump found."
-              
+
 
       - name: Smoke Test Electron App (non-Windows)
         if: matrix.os != 'windows-latest'
