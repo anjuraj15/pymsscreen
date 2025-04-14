@@ -181,7 +181,7 @@ jobs:
         shell: bash
         run: |
             echo " Checking win-unpacked for Electron app..."
-            ls -lh win-unpacked || true
+            ls -lh dist/win-unpacked || true
         
             if [[ ! -f win-unpacked/pymsscreen.exe ]]; then
               echo " EXE not found!"
@@ -189,7 +189,7 @@ jobs:
             fi
         
             echo " Launching Electron EXE in background..."
-            ./win-unpacked/pymsscreen.exe > electron-output.log 2>&1 &
+            .dist/win-unpacked/pymsscreen.exe > electron-output.log 2>&1 &
             ELECTRON_PID=$!
         
             sleep 10

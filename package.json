@@ -28,11 +28,18 @@
     }
   ],
   "asarUnpack": ["backend/**"],
+  "files": [
+    "!venv",
+    "!venv/**",
+    "**/*"
+  ],
   "win": {
     "target": ["nsis", "dir"]
   },
   "linux": {
-    "target": ["AppImage", "dir"]
+    "target": ["AppImage", "dir"],
+    "category": "Utility",
+    "artifactName": "pymsscreen-${version}-${arch}.${ext}"
   },
   "mac": {
     "target": ["dmg", "dir"]
