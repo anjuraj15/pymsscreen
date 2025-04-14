@@ -35,13 +35,13 @@
     "dist",   
     "public"
   ],
+  "asarUnpack": ["backend/**"],
   "extraResources": [
     {
       "from": "public/backend",
       "to": "backend"
     }
   ],
-  "asarUnpack": ["backend/**"],
   "win": {
     "target": ["nsis", "dir"]
   },

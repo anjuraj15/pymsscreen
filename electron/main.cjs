@@ -40,6 +40,14 @@ function startFlask() {
   console.log(`[Electron] Starting backend from: ${backendPath}`);
   console.log(`[Electron] Logging to: ${logFile}`);
 
+  console.log(`[Electron] Checking existence: ${fs.existsSync(backendPath)}`);
+  try {
+    fs.accessSync(backendPath, fs.constants.X_OK);
+    console.log(`[Electron]  Backend binary is executable`);
+  } catch (err) {
+    console.error(`[Electron] Backend binary is NOT executable:`, err);
+  }
+
   try {
     flaskProcess = spawn(backendPath, [], {
       shell,

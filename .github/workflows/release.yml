@@ -177,7 +177,11 @@ jobs:
                ls -lh public/backend
 
       - name: Make backend binary executable
-        run: chmod +x public/backend/web_app*
+        run: |
+          chmod +x public/backend/web_app*
+          echo "Verifying backend binary inside bundle..."
+          ls -lh release/linux-unpacked/resources/backend/ || true
+ 
 
       - name: Build Frontend +  Electron App
         run:  npm run build:app -- --${{ matrix.arch }}
