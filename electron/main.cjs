@@ -4,7 +4,6 @@ const os = require('os');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { pathToFileURL } = require('url');
-const waitOn = require('wait-on');
 
 let flaskProcess;
 
@@ -31,7 +30,6 @@ function startFlask() {
   const logDir = app.getPath('userData');
   const logFile = path.join(logDir, 'flask-backend.log');
 
-  // Ensure the directory exists (fixes rare CI issues)
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
   }
@@ -57,11 +55,11 @@ function startFlask() {
     flaskProcess.unref();
   } catch (e) {
     console.error(`[Electron] Exception during spawn: ${e}`);
-    fs.appendFileSync(logFile, ` Exception during spawn: ${e.message}\n`);
+    fs.appendFileSync(logFile, `Exception during spawn: ${e.message}\n`);
   }
 }
 
-// Create the Electron window
+//  Create the Electron window
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
@@ -72,27 +70,26 @@ function createWindow() {
     },
   });
 
-  const isDev = !app.isPackaged;
-
-// ✅ Wait for backend to be ready before loading UI
-waitOn({ resources: ['http://127.0.0.1:5000'], timeout: 20000 }, (err) => {
-  if (err) {
-    console.error('❌ Backend not ready:', err);
-    win.loadURL('data:text/html,<h2>Backend failed to start.</h2>');
+  if (!app.isPackaged) {
+    // wait-on is only used in development
+    const waitOn = require('wait-on');
+    waitOn({ resources: ['http://127.0.0.1:5000'], timeout: 20000 }, (err) => {
+      if (err) {
+        console.error('Backend not ready:', err);
+        win.loadURL('data:text/html,<h2>Backend failed to start.</h2>');
+      } else {
+        win.loadURL('http://localhost:5173');
+        win.webContents.openDevTools();
+      }
+    });
   } else {
-    if (isDev) {
-      win.loadURL('http://localhost:5173');
-      win.webContents.openDevTools();
-    } else {
-      const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
-      win.loadURL(pathToFileURL(indexPath).toString());
-    }
+    // Production
+    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+    win.loadURL(pathToFileURL(indexPath).toString());
   }
-});
 }
 
 //  Directory selection via dialog
-
 ipcMain.handle('select-directory', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],

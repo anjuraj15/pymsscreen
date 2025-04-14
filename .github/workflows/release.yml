@@ -96,6 +96,12 @@ jobs:
 
       - name: Preinstall wait-on
         run: npm install -g wait-on
+
+      - name: Debug Electron Output Structure
+        run: |
+          echo "Listing dist directory:"
+          ls -R dist/
+      
       
       - name: Launch Backend
         shell: bash
@@ -229,9 +235,9 @@ jobs:
               echo " Checking if backend binary was bundled correctly..."
           
               if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-                BIN="linux-unpacked/pymsscreen"
+                BIN="dist/linux-unpacked/pymsscreen"
               elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-                BIN="mac-unpacked/pymsscreen"
+                BIN="dist/mac-unpacked/pymsscreen.app/Contents/MacOS/pymsscreen"
               fi
           
               if [[ ! -f "$BIN" ]]; then
