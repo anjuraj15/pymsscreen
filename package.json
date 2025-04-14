@@ -21,13 +21,10 @@
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {
-  "extraResources": [
-    {
-      "from": "public/backend",
-      "to": "backend"
-    }
-  ],
-  "asarUnpack": ["backend/**"],
+  "directories": {
+      "app": "electron",               // tells Electron Builder your app code lives here
+      "buildResources": "electron"     // Optional: if icons/assets are in the same place
+    },
   "files": [
     "!venv",
     "!venv/**",
@@ -37,6 +34,13 @@
     "preload.js",
     "**/*"
   ],
+  "extraResources": [
+    {
+      "from": "../public/backend",
+      "to": "backend"
+    }
+  ],
+  "asarUnpack": ["backend/**"],
   "win": {
     "target": ["nsis", "dir"]
   },
