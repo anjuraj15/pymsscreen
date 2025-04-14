@@ -22,8 +22,8 @@
   },
   "build": {
   "directories": {
-      "app": "electron",               // tells Electron Builder your app code lives here
-      "buildResources": "electron"     // Optional: if icons/assets are in the same place
+      "app": "electron",               
+      "buildResources": "electron"     
     },
   "files": [
     "!venv",
