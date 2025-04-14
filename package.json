@@ -29,8 +29,15 @@
     ],
     "asarUnpack": [
       "backend/**"
+    ],
+
+    "win": {
+    "target": [
+      "nsis",   // installer (already built)
+      "dir"     // ✅ unpacked app in `win-unpacked/`
     ]
-  },
+  }
+ },
  "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",
