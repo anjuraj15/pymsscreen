@@ -31,6 +31,10 @@
   "files": [
     "!venv",
     "!venv/**",
+    "dist",   
+    "public",
+    "main.cjs",
+    "preload.js",
     "**/*"
   ],
   "win": {

@@ -95,13 +95,7 @@ jobs:
 
 
       - name: Preinstall wait-on
-        run: npm install -g wait-on
-
-      - name: Debug Electron Output Structure
-        run: |
-          echo "Listing dist directory:"
-          ls -R dist/
-      
+        run: npm install -g wait-on  
       
       - name: Launch Backend
         shell: bash
@@ -186,6 +180,11 @@ jobs:
         run:  npm run build:app -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Debug Electron Output Structure
+        run: |
+          echo "Listing dist directory:"
+          ls -R dist/
 
       - name: Smoke Test Electron App EXE
         if: matrix.os == 'windows-latest' 
