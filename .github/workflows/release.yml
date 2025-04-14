@@ -177,14 +177,8 @@ jobs:
                ls -lh public/backend
 
       - name: Make backend binary executable
-        run: |
-          chmod +x public/backend/web_app*
-          echo "Verifying backend binary inside bundle..."
-          find release -path "*/resources/backend/*" -type f || {
-          echo "Backend not found in release bundle";
-          exit 1;
-          }
- 
+        run: chmod +x public/backend/web_app*
+           
 
       - name: Build Frontend +  Electron App
         run:  npm run build:app -- --${{ matrix.arch }}
@@ -193,8 +187,11 @@ jobs:
 
       - name: Debug Electron Output Structure
         run: |
-          echo "Listing dist directory:"
-          ls -R dist/
+          echo "Verifying backend binary inside bundle..."
+          find release -path "*/resources/backend/*" -type f || {
+          echo "Backend not found in release bundle";
+          exit 1;
+          }
 
       - name: Smoke Test Electron App EXE
         if: matrix.os == 'windows-latest' 
