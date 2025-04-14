@@ -235,6 +235,46 @@ jobs:
             echo " EXE passed smoke test!"
             kill $ELECTRON_PID || true
 
+
+      - name: Enable core dumps (Linux only)
+        if: matrix.os == 'ubuntu-22.04'
+        shell: bash
+        run: |
+              echo "Enabling core dumps for crash analysis"
+              ulimit -c unlimited
+              echo "/tmp/core.%e.%p" | sudo tee /proc/sys/kernel/core_pattern
+              echo "Core pattern set to: $(cat /proc/sys/kernel/core_pattern)"
+             
+      
+              - name: Trace Electron with strace (Linux only)
+        if: matrix.os == 'ubuntu-22.04'
+        shell: bash
+        run: |
+              echo "Running Electron under strace to catch segfault causes..."
+              BIN="release/linux-unpacked/pymsscreen"
+          
+              if [[ ! -f "$BIN" ]]; then
+                echo "Electron binary not found at $BIN"
+                exit 1
+              fi
+          
+              chmod +x "$BIN"
+          
+              echo "Running strace (may produce a LOT of output)..."
+              strace -f -o strace.log "$BIN" &
+              PID=$!
+              sleep 10
+          
+              echo "Stopping process $PID"
+              kill $PID || true
+          
+              echo " Dumping last 100 lines of strace:"
+              tail -n 100 strace.log || true
+
+              echo "Checking for core dump in /tmp:"
+              ls -lh /tmp/core.* || echo "No core dump found."
+              
+
       - name: Smoke Test Electron App (non-Windows)
         if: matrix.os != 'windows-latest'
         shell: bash
