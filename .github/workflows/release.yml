@@ -186,6 +186,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Debug Electron Output Structure
+        shell: bash
         run: |
           echo "Verifying backend binary inside bundle..."
           find . -path "*/resources/backend/web_app*" -type f -exec ls -lh {} \; || {
