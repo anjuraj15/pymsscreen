@@ -188,7 +188,7 @@ jobs:
       - name: Debug Electron Output Structure
         run: |
           echo "Verifying backend binary inside bundle..."
-          find release -path "*/resources/backend/*" -type f || {
+          find . -path "*/resources/backend/web_app*" -type f -exec ls -lh {} \; || {
           echo "Backend not found in release bundle";
           exit 1;
           }
