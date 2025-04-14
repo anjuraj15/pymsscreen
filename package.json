@@ -21,18 +21,12 @@
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {
-  "directories": {
-      "app": "electron",               
-      "buildResources": "electron"     
-    },
   "files": [
     "!venv",
     "!venv/**",
+    "electron",
     "dist",   
-    "public",
-    "main.cjs",
-    "preload.js",
-    "**/*"
+    "public"
   ],
   "extraResources": [
     {
