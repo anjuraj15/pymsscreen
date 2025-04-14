@@ -194,15 +194,15 @@ jobs:
         shell: bash
         run: |
             echo " Checking win-unpacked for Electron app..."
-            ls -lh dist/win-unpacked || true
+            ls -lh release/win-unpacked/pymsscreen.exe || true
         
-            if [[ ! -f dist/win-unpacked/pymsscreen.exe ]]; then
+            if [[ ! -f release/win-unpacked/pymsscreen.exe ]]; then
               echo " EXE not found!"
               exit 1
             fi
         
             echo " Launching Electron EXE in background..."
-            ./dist/win-unpacked/pymsscreen.exe > electron-output.log 2>&1 &
+            ./release/win-unpacked/pymsscreen.exe > electron-output.log 2>&1 &
             ELECTRON_PID=$!
         
             sleep 10
@@ -237,9 +237,9 @@ jobs:
               echo " Checking if backend binary was bundled correctly..."
           
               if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-                BIN="dist/linux-unpacked/pymsscreen"
+                BIN="release/linux-unpacked/pymsscreen"
               elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-                BIN="dist/mac-unpacked/pymsscreen.app/Contents/MacOS/pymsscreen"
+                BIN="release/mac-unpacked/pyMSscreen.app/Contents/MacOS/pyMSscreen"
               fi
           
               if [[ ! -f "$BIN" ]]; then
