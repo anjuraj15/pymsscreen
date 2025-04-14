@@ -21,23 +21,23 @@
     "test:playwright": "npx playwright test tests/playwright.spec.js"
   },
   "build": {
-    "extraResources": [
-      {
-        "from": "public/backend",
-        "to": "backend"
-      }
-    ],
-    "asarUnpack": [
-      "backend/**"
-    ],
-
-    "win": {
-    "target": [
-      "nsis",   // installer (already built)
-      "dir"     // ✅ unpacked app in `win-unpacked/`
-    ]
+  "extraResources": [
+    {
+      "from": "public/backend",
+      "to": "backend"
+    }
+  ],
+  "asarUnpack": ["backend/**"],
+  "win": {
+    "target": ["nsis", "dir"]
+  },
+  "linux": {
+    "target": ["AppImage", "dir"]
+  },
+  "mac": {
+    "target": ["dmg", "dir"]
   }
- },
+},
  "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",

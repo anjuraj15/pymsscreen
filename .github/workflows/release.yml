@@ -65,7 +65,7 @@ jobs:
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
             ADD_DATAS="--add-data=${OPENMS_DATA_PATH}:share/OpenMS"
             ./venv/bin/pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
-            mv dist/web_app ./web_app
+            mv dist/web_app ./web_app_macos
 
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             WHEEL_LIB_PATH="venv/Lib/site-packages/pyopenms"
@@ -83,12 +83,15 @@ jobs:
 
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
             ./venv/bin/pyinstaller $PYINSTALLER_COMMON --hidden-import pyopenms --collect-all pyopenms
-            mv dist/web_app ./web_app
+            mv dist/web_app ./web_app_linux
           fi
 
           echo " Checking for final binary:"
           ls -l ./web_app* || true
 
+      - name: Preinstall wait-on
+        run: npm install -g wait-on
+      
       - name: Launch Backend
         shell: bash
         run: |
@@ -121,7 +124,7 @@ jobs:
 
           echo " Waiting for backend to start on 127.0.0.1:5000..."
           sleep 2
-          npx wait-on --timeout=180000 --interval=5000 http://127.0.0.1:5000 || {
+          npx wait-on --timeout=300000 --interval=5000 http://127.0.0.1:5000 || {
             echo "Backend failed to start within timeout."; exit 1;
           }
           echo "  Backend is live!"
@@ -214,6 +217,40 @@ jobs:
             echo " EXE passed smoke test!"
             kill $ELECTRON_PID || true
 
+      - name: Smoke Test Electron App (non-Windows)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+              echo " Checking if backend binary was bundled correctly..."
+          
+              if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+                BIN="linux-unpacked/pymsscreen"
+              elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+                BIN="mac-unpacked/pymsscreen"
+              fi
+          
+              if [[ ! -f "$BIN" ]]; then
+                echo "Electron binary not found at $BIN"
+                exit 1
+              fi
+          
+              echo " Running Electron binary..."
+              chmod +x "$BIN"
+              "$BIN" > test.log 2>&1 &
+              PID=$!
+              sleep 10
+          
+              echo " Checking if backend started..."
+              if ! curl --silent http://127.0.0.1:5000; then
+                echo " Backend did not respond"
+                cat test.log
+                kill $PID || true
+                exit 1
+              fi
+          
+              echo " Electron and backend started correctly!"
+              kill $PID || true
+
       - name: Upload Platform Bundle
         uses: actions/upload-artifact@v4
         with:
@@ -239,5 +276,5 @@ jobs:
 
       - name: List Bundles
         run: |
-          echo "📦 Final App Bundles:"
+          echo "Final App Bundles:"
           ls -R bundles/
