@@ -97,10 +97,6 @@ jobs:
       - name: Preinstall wait-on
         run: npm install -g wait-on  
       
-      - name: Kill any leftover backend processes
-        run: |
-          pkill -f web_app || true
-
       - name: Launch Backend
         shell: bash
         run: |
