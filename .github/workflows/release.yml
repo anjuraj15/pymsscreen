@@ -186,6 +186,10 @@ jobs:
                elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
                  if [[ -f "web_app_linux" ]]; then
                     cp -r web_app/* public/backend/
+                 else
+                    echo "❌ web_app (Linux) not found!"
+                    exit 1
+                 fi
                fi
 
                echo " public/web_app/ now contains:"           
