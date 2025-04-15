@@ -52,14 +52,9 @@ jobs:
       - name: Build Backend Binary
         shell: bash
         run: |
-          PYINSTALLER_COMMON="--clean --log-level DEBUG --onefile --name web_app web_app.py \
+          PYINSTALLER_COMMON="--clean --log-level DEBUG --onedir --name web_app web_app.py \
             --collect-all rdkit --collect-all flask --collect-all pandas --collect-all plotly \
             --collect-all numpy --collect-submodules numpy --collect-all waitress"
-
-          # Include Flask templates/static assets
-          ADD_RESOURCES="--add-data=templates${{ matrix.os == 'windows-latest' && ';' || ':' }}templates \
-                         --add-data=static${{ matrix.os == 'windows-latest' && ';' || ':' }}static"
-
 
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             WHEEL_LIB_PATH="venv/lib/python3.11/site-packages/pyopenms"
@@ -70,7 +65,7 @@ jobs:
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
             ADD_DATAS="--add-data=${OPENMS_DATA_PATH}:share/OpenMS"
             ./venv/bin/pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
-            mv dist/web_app ./web_app_macos
+            mv dist/web_app/web_app ./web_app_macos
 
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             WHEEL_LIB_PATH="venv/Lib/site-packages/pyopenms"
@@ -84,11 +79,11 @@ jobs:
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH\\share\\OpenMS"
             ADD_DATAS="--add-data=${OPENMS_DATA_PATH};share\\OpenMS"
             ./venv/Scripts/pyinstaller.exe $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
-            mv dist/web_app.exe ./web_app.exe
+            mv dist/web_app/web_app.exe ./web_app.exe
 
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
             ./venv/bin/pyinstaller $PYINSTALLER_COMMON --hidden-import pyopenms --collect-all pyopenms
-            mv dist/web_app ./web_app_linux
+            mv dist/web_app/web_app ./web_app_linux
           fi
 
           echo " Checking for final binary:"

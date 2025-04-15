@@ -6,7 +6,9 @@ const { spawn } = require('child_process');
 const { pathToFileURL } = require('url');
 const http = require('http');
 
-function waitForBackend(url = 'http://127.0.0.1:5000/ping', timeout = 120000) {
+win.loadURL('data:text/html,<h2>Loading backend, please wait...</h2>');
+
+function waitForBackend(url = 'http://127.0.0.1:5000/ping', timeout = 300000) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
 
