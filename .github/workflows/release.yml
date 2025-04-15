@@ -170,21 +170,21 @@ jobs:
            mkdir -p public/backend
 
                if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-                 if [[ -f "web_app.exe" ]]; then
+                 if [[ -f "web_app/web_app.exe" ]]; then
                     cp -r web_app/* public/backend/
                  else
                    echo " web_app.exe not found!"
                    exit 1
                  fi
                elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-                 if [[ -f "web_app" ]]; then
+                 if [[ -f "web_app/web_app" ]]; then
                    cp -r web_app/* public/backend/
                  else
                    echo " web_app_macos not found!"
                    exit 1
                  fi
                elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-                 if [[ -f "web_app ]]; then
+                 if [[ -f "web_app/web_app ]]; then
                     cp -r web_app/* public/backend/
                  else
                     echo "❌ web_app (Linux) not found!"
