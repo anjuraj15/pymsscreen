@@ -11,10 +11,27 @@ from rdkit.Chem import Descriptors, rdMolDescriptors
 from pyopenms import MSExperiment, MzMLFile
 from waitress import serve
 import time
+import os
+import sys
+import ctypes
+
+if hasattr(sys, '_MEIPASS'):
+    lib_dir = sys._MEIPASS
+else:
+    lib_dir = os.path.dirname(os.path.abspath(__file__))
+
+try:
+    if sys.platform == "win32":
+        ctypes.CDLL(os.path.join(lib_dir, "python311.dll"))
+    elif sys.platform == "darwin":
+        ctypes.CDLL(os.path.join(lib_dir, "libpython3.11.dylib"))
+    elif sys.platform == "linux":
+        ctypes.CDLL(os.path.join(lib_dir, "libpython3.11.so.1.0"))
+except Exception as e:
+    print(f"[Startup] Failed to preload Python shared lib: {e}")
+
 
 start = time.time()
-
-
 app = Flask(__name__)
 from routes.pdf_export import register_pdf_export
 register_pdf_export(app)

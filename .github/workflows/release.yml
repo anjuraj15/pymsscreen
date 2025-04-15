@@ -59,17 +59,26 @@ jobs:
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             WHEEL_LIB_PATH="venv/lib/python3.11/site-packages/pyopenms"
             ADD_BINARIES=""
+            PYTHON_DYLIB_PATH=$(find venv -name "libpython3.11.dylib" | head -n 1)
+            [[ -f "$PYTHON_DYLIB_PATH" ]] && ADD_BINARIES+=" --add-binary $PYTHON_DYLIB_PATH:."
+
             for lib in "$WHEEL_LIB_PATH"/*.dylib; do
               [[ -f "$lib" ]] && ADD_BINARIES+=" --add-binary $lib:."
             done
+
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH/share/OpenMS"
             ADD_DATAS="--add-data=${OPENMS_DATA_PATH}:share/OpenMS"
+
             ./venv/bin/pyinstaller $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
-            mv dist/web_app/web_app ./web_app_macos
+            cp -r dist/web_app ./web_app
 
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             WHEEL_LIB_PATH="venv/Lib/site-packages/pyopenms"
             ADD_BINARIES=""
+
+            PYTHON_DLL_PATH="venv\\Scripts\\python311.dll"
+            [[ -f "$PYTHON_DLL_PATH" ]] && ADD_BINARIES+=" --add-binary $PYTHON_DLL_PATH;."
+
             for dll in OpenMS.dll OpenSwathAlgo.dll Qt5Core.dll Qt5Network.dll concrt140.dll \
                          msvcp140.dll msvcp140_1.dll msvcp140_2.dll msvcp140_atomic_wait.dll \
                          msvcp140_codecvt_ids.dll vcruntime140.dll vcruntime140_1.dll vcomp140.dll; do
@@ -79,15 +88,25 @@ jobs:
             OPENMS_DATA_PATH="$WHEEL_LIB_PATH\\share\\OpenMS"
             ADD_DATAS="--add-data=${OPENMS_DATA_PATH};share\\OpenMS"
             ./venv/Scripts/pyinstaller.exe $PYINSTALLER_COMMON $ADD_BINARIES $ADD_DATAS
-            mv dist/web_app/web_app.exe ./web_app.exe
+            cp -r dist/web_app ./web_app
 
           elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+
+            ADD_BINARIES=""
+            PYTHON_SO_PATH=$(find venv/lib -name "libpython3.11.so.1.0" | head -n 1)
+            [[ -f "$PYTHON_SO_PATH" ]] && ADD_BINARIES+=" --add-binary $PYTHON_SO_PATH:."
             ./venv/bin/pyinstaller $PYINSTALLER_COMMON --hidden-import pyopenms --collect-all pyopenms
-            mv dist/web_app/web_app ./web_app_linux
+            cp -r dist/web_app ./web_app
           fi
 
-          echo " Checking for final binary:"
-          ls -l ./web_app* || true
+          echo " Listing contents of ./web_app:"
+          if [ -d ./web_app ]; then
+             ls -lh ./web_app
+          else
+             echo "  Directory ./web_app does not exist."
+          fi
+
+
 
           # ✅ DELETE VENV to avoid Electron packaging error
           echo "Cleaning up virtual environment..."
