@@ -130,7 +130,7 @@ function createWindow() {
         win.loadURL('data:text/html,<h2>Backend failed to start.</h2>');
       });
   }
-
+}
 //  Directory selection via dialog
 ipcMain.handle('select-directory', async () => {
   const result = await dialog.showOpenDialog({
