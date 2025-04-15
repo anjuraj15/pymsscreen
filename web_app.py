@@ -10,8 +10,18 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors, rdMolDescriptors
 from pyopenms import MSExperiment, MzMLFile
 from waitress import serve
+import os
+import sys
 
-app = Flask(__name__)
+if hasattr(sys, '_MEIPASS'):
+    base_path = sys._MEIPASS
+else:
+    base_path = os.path.abspath(".")
+
+template_folder = os.path.join(base_path, 'templates')
+static_folder = os.path.join(base_path, 'static')
+
+app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 from routes.pdf_export import register_pdf_export
 register_pdf_export(app)
 app.secret_key = 'supersecretkey'
@@ -629,5 +639,9 @@ def save_plots():
 def index():
     return "", 200
 
+@app.route('/ping')
+def ping():
+    return "pong", 200
+
 if __name__ == '__main__':
-    serve(app,host="0.0.0.0", port=5000)
+    serve(app,host="127.0.0.1", port=5000)

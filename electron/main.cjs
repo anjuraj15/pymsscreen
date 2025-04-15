@@ -4,6 +4,29 @@ const os = require('os');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { pathToFileURL } = require('url');
+const http = require('http');
+
+function waitForBackend(url = 'http://127.0.0.1:5000/ping', timeout = 120000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+
+    function check() {
+      http.get(url, (res) => {
+        if (res.statusCode === 200) return resolve(true);
+        retry();
+      }).on('error', retry);
+    }
+
+    function retry() {
+      if (Date.now() - start > timeout) {
+        return reject(new Error('Backend not responding in time.'));
+      }
+      setTimeout(check, 500);
+    }
+
+    check();
+  });
+}
 
 let flaskProcess;
 
@@ -91,11 +114,22 @@ function createWindow() {
       }
     });
   } else {
-    // Production
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
-    win.loadURL(pathToFileURL(indexPath).toString());
+
+    waitForBackend()
+      .then(() => {
+        console.log('[Electron] Backend is ready. Loading frontend...');
+        win.loadURL(pathToFileURL(indexPath).toString());
+      })
+      .catch((err) => {
+        console.error('[Electron] Backend did not respond:', err);
+        dialog.showErrorBox(
+          'Backend Startup Failed',
+          'The backend server failed to start. Please try restarting the app.'
+        );
+        win.loadURL('data:text/html,<h2>Backend failed to start.</h2>');
+      });
   }
-}
 
 //  Directory selection via dialog
 ipcMain.handle('select-directory', async () => {

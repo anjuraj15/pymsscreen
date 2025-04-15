@@ -56,6 +56,11 @@ jobs:
             --collect-all rdkit --collect-all flask --collect-all pandas --collect-all plotly \
             --collect-all numpy --collect-submodules numpy --collect-all waitress"
 
+          # Include Flask templates/static assets
+          ADD_RESOURCES="--add-data=templates${{ matrix.os == 'windows-latest' && ';' || ':' }}templates \
+                         --add-data=static${{ matrix.os == 'windows-latest' && ';' || ':' }}static"
+
+
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             WHEEL_LIB_PATH="venv/lib/python3.11/site-packages/pyopenms"
             ADD_BINARIES=""
