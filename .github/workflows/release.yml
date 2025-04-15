@@ -177,14 +177,14 @@ jobs:
                    exit 1
                  fi
                elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-                 if [[ -f "web_app_macos" ]]; then
+                 if [[ -f "web_app" ]]; then
                    cp -r web_app/* public/backend/
                  else
                    echo " web_app_macos not found!"
                    exit 1
                  fi
                elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-                 if [[ -f "web_app_linux" ]]; then
+                 if [[ -f "web_app ]]; then
                     cp -r web_app/* public/backend/
                  else
                     echo "❌ web_app (Linux) not found!"
