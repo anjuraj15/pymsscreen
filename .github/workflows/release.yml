@@ -122,15 +122,15 @@ jobs:
           echo " Launching backend on: ${{ matrix.os }}"
 
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            BIN="./web_app.exe"
+            BIN="./web_app/web_app.exe"
             export OPENMS_DATA_PATH=share\\OpenMS
           
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            BIN="./web_app_macos"
+            BIN="./web_app/web_app"
             export OPENMS_DATA_PATH=share/OpenMS
           
           else
-            BIN="./web_app_linux"
+            BIN="./web_app/web_app"
             export OPENMS_DATA_PATH=share/OpenMS
           fi
 
@@ -171,32 +171,28 @@ jobs:
 
                if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
                  if [[ -f "web_app.exe" ]]; then
-                    cp web_app.exe public/backend/web_app.exe
+                    cp -r web_app/* public/backend/
                  else
                    echo " web_app.exe not found!"
                    exit 1
                  fi
                elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
                  if [[ -f "web_app_macos" ]]; then
-                   cp web_app_macos public/backend/web_app_macos
+                   cp -r web_app/* public/backend/
                  else
                    echo " web_app_macos not found!"
                    exit 1
                  fi
                elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
                  if [[ -f "web_app_linux" ]]; then
-                    cp web_app_linux public/backend/web_app_linux
-                 else
-                   echo " web_app_linux not found!"
-                   exit 1
-                 fi
+                    cp -r web_app/* public/backend/
                fi
 
-               echo "Final contents of public/backend:"
+               echo " public/web_app/ now contains:"           
                ls -lh public/backend
 
       - name: Make backend binary executable
-        run: chmod +x public/backend/web_app*
+        run: chmod +x public/backend/web_app* || true
            
 
       - name: Build Frontend +  Electron App
@@ -208,7 +204,7 @@ jobs:
         shell: bash
         run: |
           echo "Verifying backend binary inside bundle..."
-          find . -path "*/resources/backend/web_app*" -type f -exec ls -lh {} \; || {
+          find . -path "*/resources/backend/*" -exec ls -lh {} \; || {
           echo "Backend not found in release bundle";
           exit 1;
           }
@@ -237,7 +233,7 @@ jobs:
               echo " Backend log found. Checking for errors..."
               if grep -Ei 'error|exception|uncaught|fatal' "$LOGFILE"; then
                 echo " Runtime error detected!"
-                cat "$LOGFILE"
+                cat "$LOGFILE" || echo "Log missing"
                 kill $ELECTRON_PID || true
                 exit 1
               fi
@@ -288,7 +284,7 @@ jobs:
               kill $PID || true
           
               echo " Dumping last 100 lines of strace:"
-              tail -n 100 strace.log || true
+              tail -n 500 strace.log || true
 
               echo "Checking for core dump in /tmp:"
               ls -lh /tmp/core.* || echo "No core dump found."

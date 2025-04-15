@@ -34,17 +34,18 @@ let flaskProcess;
 
 //  Platform-aware backend binary path
 function getBackendBinaryPath() {
-  const platformBinaryName = {
+  const platformDir = path.join('backend', 'web_app'); // new onedir bundle folder
+  const exeName = {
     win32: 'web_app.exe',
-    darwin: 'web_app_macos',
-    linux: 'web_app_linux',
+    darwin: 'web_app',
+    linux: 'web_app',
   }[os.platform()] || 'web_app';
 
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'backend', platformBinaryName);
+    return path.join(process.resourcesPath, platformDir, exeName);
   }
 
-  return path.join(__dirname, '..', 'public', 'backend', platformBinaryName);
+  return path.join(__dirname, '..', 'public', platformDir, exeName);
 }
 
 //  Launch backend server (Flask or Python binary)
