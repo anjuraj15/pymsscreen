@@ -5,36 +5,13 @@ import { useNavigate } from 'react-router-dom';
 
 const LandingPage = () => {
   const { appState, updateAppState } = useAppState();
-  const [draggedRowIndex, setDraggedRowIndex] = useState(null);
-
-  
-  useEffect(() => {
-  if (appState.working_directory && mzmlFiles.length === 0) {
-    setWorkingDirectory(appState.working_directory || '');
-
-    const files = appState.mzml_files.map(f => ({ name: f.file.split('/').pop() }));
-    setMzmlFiles(files);
-
-    const loadedTags = {};
-    const loadedAdducts = {};
-    appState.mzml_files.forEach(f => {
-      const fname = f.file.split('/').pop();
-      loadedTags[fname] = f.tag;
-      loadedAdducts[fname] = f.adduct;
-    });
-
-    setTags(loadedTags);
-    setAdductSelections(loadedAdducts);
-  }
-}, [appState]);
-
-
   const navigate = useNavigate();
-  const [workingDirectory, setWorkingDirectory] = useState('');
+
   const [compoundCSV, setCompoundCSV] = useState(null);
   const [mzmlFiles, setMzmlFiles] = useState([]);
   const [tags, setTags] = useState({});
   const [adductSelections, setAdductSelections] = useState({});
+  const [draggedRowIndex, setDraggedRowIndex] = useState(null);
 
   const adducts = [
     '[M+H]+', '[M+Na]+', '[M+K]+', '[M-H]-', '[M+NH4]+',
@@ -42,32 +19,50 @@ const LandingPage = () => {
     '[M+Cl]-', '[M+HCOO]-', '[M+CH3COO]-'
   ];
 
-  useEffect(() => {
-    if (appState.working_directory) {
-      setWorkingDirectory(appState.working_directory);
+  
+  const handleCompoundCsvUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-      const files = appState.mzml_files.map(f => ({ name: f.file.split('/').pop() }));
-      setMzmlFiles(files);
+    const formData = new FormData();
+    formData.append('file', file);
 
-      const loadedTags = {};
-      const loadedAdducts = {};
-      appState.mzml_files.forEach(f => {
-        const fname = f.file.split('/').pop();
-        loadedTags[fname] = f.tag;
-        loadedAdducts[fname] = f.adduct;
+    try {
+      await fetch('https://your-backend-url/upload_file', {
+        method: 'POST',
+        body: formData,
       });
-      setTags(loadedTags);
-      setAdductSelections(loadedAdducts);
+      setCompoundCSV(file);
+      alert('✅ Compound CSV uploaded!');
+    } catch (err) {
+      console.error('Compound CSV upload failed:', err);
+      alert('❌ Failed to upload Compound CSV.');
     }
-  }, [appState]);
+  };
 
-  useEffect(() => {
-    if (!appState.working_directory) {
-      // Auto-load state from backend if working directory is missing
-      handleLoadState();
+  // Upload multiple mzML files immediately
+  const handleMzmlUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    const uploadedFiles = [];
+
+    for (let file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        await fetch('https://your-backend-url/upload_file', {
+          method: 'POST',
+          body: formData,
+        });
+        uploadedFiles.push({ name: file.name });
+      } catch (err) {
+        console.error('mzML upload failed for', file.name, err);
+      }
     }
-  }, []);
 
+    setMzmlFiles(prev => [...prev, ...uploadedFiles]);
+    alert('✅ mzML files uploaded!');
+  };
   const handleSaveState = async () => {
     const compoundName = compoundCSV?.name || '';
     const mzmlData = mzmlFiles.map(file => ({
@@ -77,56 +72,89 @@ const LandingPage = () => {
     }));
 
     const updatedState = {
-      working_directory: workingDirectory,
       compound_csv: compoundName,
       mzml_files: mzmlData
     };
 
     try {
-      await saveState(updatedState);
+      const response = await fetch('https://your-backend-url/save_state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedState),
+      });
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'state.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
       updateAppState(updatedState);
-      alert('✅ State saved successfully!');
+      alert('✅ State saved and downloaded!');
     } catch (err) {
-      console.error('Save failed:', err);
+      console.error('Save state failed:', err);
       alert('❌ Failed to save state.');
     }
   };
 
-  const handleLoadState = async () => {
+  const handleLoadState = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      const res = await loadState({ working_directory: workingDirectory });
-      const data = res.data;
+      const response = await fetch('https://your-backend-url/load_state_from_upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
 
       updateAppState(data);
-      setWorkingDirectory(data.working_directory || '');
-
-      const files = data.mzml_files.map(f => ({ name: f.file.split('/').pop() }));
+      setCompoundCSV({ name: data.compound_csv });
+      const files = data.mzml_files.map(f => ({ name: f.file }));
       setMzmlFiles(files);
 
       const loadedTags = {};
       const loadedAdducts = {};
       data.mzml_files.forEach(f => {
-        const fname = f.file.split('/').pop();
-        loadedTags[fname] = f.tag;
-        loadedAdducts[fname] = f.adduct;
+        loadedTags[f.file] = f.tag;
+        loadedAdducts[f.file] = f.adduct;
       });
-
       setTags(loadedTags);
       setAdductSelections(loadedAdducts);
 
       alert('✅ State loaded successfully!');
     } catch (err) {
-      console.error('Load failed:', err);
+      console.error('Load state failed:', err);
       alert('❌ Failed to load state.');
     }
   };
 
   const handleGenerateTable = async () => {
     try {
-      await generateTable({ workingDirectory });
-      alert('✅ Table generated successfully!');
+      const response = await fetch('https://your-backend-url/generate_table', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'comprehensive_table.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      alert('✅ Table generated and downloaded!');
     } catch (err) {
-      console.error('Table generation failed:', err);
+      console.error('Generate table failed:', err);
       alert('❌ Failed to generate table.');
     }
   };
@@ -181,14 +209,11 @@ const LandingPage = () => {
           </details>
         </div>
 
-        <label>Working Directory:</label>
-        <input type="text" value={workingDirectory} onChange={(e) => setWorkingDirectory(e.target.value)} style={{ width: '100%' }} />
+        <label>Upload Compound CSV:</label>
+        <input type="file" accept=".csv" onChange={handleCompoundCsvUpload} />
 
-        <label>Compound CSV:</label>
-        <input type="file" accept=".csv" onChange={(e) => setCompoundCSV(e.target.files[0])} />
-
-        <label>mzML Files:</label>
-        <input type="file" accept=".mzML" multiple onChange={(e) => setMzmlFiles([...e.target.files])} />
+        <label>Upload mzML Files:</label>
+        <input type="file" accept=".mzML" multiple onChange={handleMzmlUpload} />
 
       </div>
 
@@ -246,7 +271,7 @@ const LandingPage = () => {
 
       <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: '90%', margin: '20px auto' }}>
         <button onClick={handleSaveState} style={{ padding: '10px 15px', marginRight: '5px', borderRadius: '5px', background: 'linear-gradient(to bottom, #a7cce5, #bfe1f2)' }}>Save State</button>
-        <button onClick={handleLoadState} style={{ padding: '10px 15px', marginRight: '5px', borderRadius: '5px', background: 'linear-gradient(to bottom, #a7cce5, #bfe1f2)' }}>Load State</button>
+        <input type="file" accept="application/json" onChange={handleLoadState} style={{ padding: '10px 15px', marginRight: '5px', borderRadius: '5px', background: 'linear-gradient(to bottom, #a7cce5, #bfe1f2)' }}/>
         <button onClick={handleGenerateTable} style={{ padding: '10px 15px', borderRadius: '5px', background: 'linear-gradient(to bottom, #a7cce5, #bfe1f2)' }}>Generate Table</button>
       </div>
 

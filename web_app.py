@@ -32,25 +32,36 @@ ADDUCT_MASS = {
     "[M+CH3COO]-": 59.013851
 }
 
-def resolve_path(p):
-    return os.path.expanduser(p)
+BASE_DIR = os.getcwd()  # Current working directory (where app is running)
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True) 
+
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "Empty filename"}), 400
+
+    filepath = os.path.join(UPLOAD_DIR, file.filename)
+    file.save(filepath)
+
+    return jsonify({"message": "File uploaded successfully", "filename": file.filename})
+
 
 @app.route('/save_state', methods=['POST'])
 def save_state():
     try:
         data = request.get_json()
         print("Save request data:", data)
-        working_directory = os.path.expanduser(data.get("working_directory", "."))
-
-        if not os.path.exists(working_directory):
-            return jsonify({"error": "Invalid working directory"}), 400
 
         state = {
-            "working_directory": working_directory,
-            "compound_csv": os.path.join(working_directory, data.get("compound_csv", "")),
+            "compound_csv": data.get("compound_csv", ""),
             "mzml_files": [
                 {
-                    "file": os.path.join(working_directory, f.get("file")),
+                    "file": f.get("file"),
                     "tag": f.get("tag", ""),
                     "adduct": f.get("adduct", "")
                 }
@@ -58,20 +69,19 @@ def save_state():
             ]
         }
 
-        with open(os.path.join(working_directory, "state.json"), "w") as f:
+        state_path = os.path.join(UPLOAD_DIR, "state.json")
+        with open(state_path, "w") as f:
             json.dump(state, f, indent=2)
-
-        return jsonify({"message": "State saved successfully!"})
-
+        return send_file(state_path, as_attachment=True)
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/load_state', methods=['POST'])
+
+@app.route('/load_state', methods=['GET'])
 def load_state():
     try:
-        data = request.get_json()
-        working_directory = os.path.expanduser(data.get("working_directory", "."))
-        state_path = os.path.join(working_directory, "state.json")
+        state_path = os.path.join(UPLOAD_DIR, "state.json")
 
         if not os.path.exists(state_path):
             return jsonify({"error": "No saved state found."}), 404
@@ -84,30 +94,26 @@ def load_state():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/generate_table', methods=['POST'])
 def generate_table():
     try:
-        body = request.get_json(force=True)
-        working_directory = resolve_path(body.get("workingDirectory", ""))
-        print(f"Working directory: {working_directory}")
-
-        state_path = os.path.join(working_directory, "state.json")
+        state_path = os.path.join(UPLOAD_DIR, "state.json")
         if not os.path.exists(state_path):
-            return jsonify({"error": f"State file not found at {state_path}"}), 404
+            return jsonify({"error": "State file not found"}), 404
 
         with open(state_path, "r") as f:
             state = json.load(f)
 
-        compound_csv = state.get("compound_csv", "")
-        compound_csv_path = compound_csv if os.path.isabs(compound_csv) else os.path.join(working_directory, compound_csv)
-
+        compound_csv_path = os.path.join(UPLOAD_DIR, state.get("compound_csv", ""))
         if not os.path.exists(compound_csv_path):
-            return jsonify({"error": f"Compound CSV file not found: {compound_csv_path}"}), 404
+            return jsonify({"error": f"Compound CSV not found: {compound_csv_path}"}), 404
 
         compound_df = pd.read_csv(compound_csv_path)
-        output_rows = []
-        compound_set = os.path.splitext(os.path.basename(compound_csv))[0]
+        compound_set = os.path.splitext(os.path.basename(compound_csv_path))[0]
 
+        output_rows = []
+        
         for compound in compound_df.itertuples():
             smiles = getattr(compound, "SMILES", "")
             formula = ""
@@ -159,14 +165,10 @@ def generate_table():
                 }
                 output_rows.append(row)
 
-        output_path = os.path.join(working_directory, "comprehensive_table.csv")
+        output_path = os.path.join(UPLOAD_DIR, "comprehensive_table.csv")
         pd.DataFrame(output_rows).to_csv(output_path, index=False)
-
-        print(f"Table saved at: {output_path}")
-        return jsonify({"message": "Table generated successfully", "path": output_path})
-
+        return send_file(output_path, as_attachment=True)
     except Exception as e:
-        print(f" Error generating table: {e}")
         return jsonify({"error": str(e)}), 500
 
 
