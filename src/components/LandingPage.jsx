@@ -56,6 +56,7 @@ const LandingPage = () => {
 
     setMzmlFiles(prev => [...prev, ...uploadedFiles]);
     alert('✅ mzML files uploaded!');
+    setUploading(false);
   };
   const handleSaveState = async () => {
     const compoundName = compoundCSV?.name || '';
@@ -72,7 +73,7 @@ const LandingPage = () => {
 
     try {
       const response = await saveState(updatedState);
-      const blob = await response.blob();
+      const blob = new Blob([response.data], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -195,6 +196,12 @@ const LandingPage = () => {
 
         <label>Upload mzML Files:</label>
         <input type="file" accept=".mzML" multiple onChange={handleMzmlUpload} />
+
+        {uploading && (
+          <div style={{color: 'blue', fontWeight: 'bold', marginTop: '10px'}}>
+           Uploading files... please wait.
+          </div>
+        )}
 
       </div>
 
