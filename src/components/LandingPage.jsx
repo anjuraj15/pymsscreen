@@ -95,29 +95,34 @@ const LandingPage = () => {
   const handleLoadState = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-
+  
     try {
-      const response = await loadStateFromFile(file);
-      const data = await response.json();
-
+      const response = await loadStateFromFile(file); // API call
+      const data = response.data;
+  
+      // ✅ Update app global state
       updateAppState(data);
+  
+      // ✅ Set the compound CSV filename
       setCompoundCSV({ name: data.compound_csv });
+  
+      // ✅ Set mzML files to show in the table
       const files = data.mzml_files.map(f => ({ name: f.file }));
       setMzmlFiles(files);
-
+  
+      // ✅ Set tags and adduct selections
       const loadedTags = {};
       const loadedAdducts = {};
+  
       data.mzml_files.forEach(f => {
         loadedTags[f.file] = f.tag;
         loadedAdducts[f.file] = f.adduct;
       });
+  
       setTags(loadedTags);
       setAdductSelections(loadedAdducts);
-
-      alert('✅ State loaded successfully!');
+  
+      alert('✅ State loaded and table restored!');
     } catch (err) {
       console.error('Load state failed:', err);
       alert('❌ Failed to load state.');

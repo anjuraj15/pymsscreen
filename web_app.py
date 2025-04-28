@@ -78,6 +78,16 @@ def save_state():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/load_state_from_upload', methods=['POST'])
+def load_state_from_upload():
+    try:
+        file = request.files['file']
+        state = json.load(file)
+        return jsonify(state)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/load_state', methods=['GET'])
 def load_state():
     try:
