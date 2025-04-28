@@ -4,20 +4,34 @@ import axios from 'axios';
 const API_BASE = 'https://pymsscreen.onrender.com';
 
 
+// Save State (returns a file for download)
 export const saveState = (state) => {
-  return axios.post(`${API_BASE}/save_state`, state);
+  return axios.post(`${API_BASE}/save_state`, state, { responseType: 'blob' });
 };
 
-export const loadState = (payload) => {
-  return axios.post(`${API_BASE}/load_state`, payload);
-};
+// Load State (by uploading a state.json file)
+export const loadStateFromFile = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
 
-export const generateTable = (payload) => {
-  return axios.post(`${API_BASE}/generate_table`, payload, {
-    headers: {
-      'Content-Type': 'application/json',
-    }
+  return axios.post(`${API_BASE}/load_state_from_upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
   });
+};
+
+// Upload Compound CSV or mzML file
+export const uploadFile = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return axios.post(`${API_BASE}/upload_file`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+};
+
+// Generate Table (returns a CSV file for download)
+export const generateTable = () => {
+  return axios.post(`${API_BASE}/generate_table`, {}, { responseType: 'blob' });
 };
 
 export const saveExtractConfig = async (config) => {
