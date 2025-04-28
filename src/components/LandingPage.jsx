@@ -40,6 +40,7 @@ const LandingPage = () => {
 
   // Upload multiple mzML files immediately
   const handleMzmlUpload = async (e) => {
+    setUploading(true); 
     const files = Array.from(e.target.files);
     const uploadedFiles = [];
 
@@ -126,7 +127,7 @@ const LandingPage = () => {
   const handleGenerateTable = async () => {
     try {
       const response = await generateTable();
-      const blob = await response.blob();
+      const blob = new Blob([response.data], { type: 'text/csv' }); 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
