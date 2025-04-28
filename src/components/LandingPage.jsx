@@ -174,24 +174,8 @@ const handleSaveState = async () => {
           </details>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-          <label style={{ whiteSpace: 'nowrap' }}>Working Directory:</label>
-          <input
-            type="text"
-            value={workingDirectory}
-            onChange={(e) => setWorkingDirectory(e.target.value)}
-            style={{ flex: 1, padding: '5px' }}
-          />
-          <button
-            onClick={async () => {
-              const dir = await window.electronAPI?.selectDirectory();
-              if (dir) setWorkingDirectory(dir);
-            }}
-            style={{ padding: '6px 12px' }}
-          >
-            📁 Browse
-          </button>
-        </div>
+        <label>Working Directory:</label>
+        <input type="text" value={workingDirectory} onChange={(e) => setWorkingDirectory(e.target.value)} style={{ width: '100%' }} />
 
         <label>Compound CSV:</label>
         <input type="file" accept=".csv" onChange={(e) => setCompoundCSV(e.target.files[0])} />

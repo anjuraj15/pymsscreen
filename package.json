@@ -1,61 +1,15 @@
 {
-  "name": "pymsscreen",
+  "name": "pyms-react",
   "private": true,
-  "version": "1.0.0",
-  "description": "PyMSscreen: A cross-platform Electron app with Flask backend",
-  "author": {
-    "name": "Anjana Elapavalore"
-  },
+  "version": "0.0.0",
   "type": "module",
-  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "electron": "electron .",
-    "build:electron": "electron-builder --publish never",
-    "build:electron:x64": "electron-builder --linux AppImage --x64 --publish never",
-    "build:electron:arm64": "electron-builder --linux AppImage --arm64 --publish never",
-    "build:app": "npm run build && npm run build:electron",
-    "test:playwright": "npx playwright test tests/playwright.spec.js"
+    "preview": "vite preview"
   },
-  "build": {
-  "appId": "com.pyms.screen",                         
-  "productName": "pyMSscreen",                        
-  "directories": {
-    "output": "release",                              
-    "buildResources": "electron"                      
-  },
-  "files": [
-    "!venv",
-    "!venv/**",
-    "electron/main.cjs",
-    "electron/preload.js",
-    "dist",   
-    "public"
-  ],
-  "asar": true,
-  "asarUnpack": ["backend/**"],
-  "extraResources": [
-    {
-      "from": "public/backend",
-      "to": "backend"
-    }
-  ],
-  "win": {
-    "target": ["nsis", "dir"]
-  },
-  "linux": {
-    "target": ["AppImage", "dir"],
-    "category": "Utility",
-    "artifactName": "pymsscreen-${version}-${arch}.${ext}"
-  },
-  "mac": {
-    "target": ["dmg", "dir"]
-  }
-},
- "dependencies": {
+  "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "axios": "^1.8.4",
     "chroma-js": "^3.1.2",
@@ -67,30 +21,24 @@
     "react-dom": "^19.0.0",
     "react-draggable": "^4.4.6",
     "react-plotly.js": "^2.6.0",
-    "react-router-dom": "^6.30.0",
+    "react-router-dom": "^7.4.0",
     "react-select": "^5.10.1",
     "smiles-drawer": "^2.1.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
-    "@playwright/test": "^1.51.1",
     "@tailwindcss/cli": "^4.0.15",
     "@tailwindcss/postcss": "^4.0.17",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.21",
-    "electron": "^35.1.4",
-    "electron-builder": "^26.0.12",
-    "eslint": "^9.24.0",
+    "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
-    "playwright": "^1.51.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.17",
-    "vite": "^6.2.0",
-    "wait-on": "^8.0.3"
-  },
-  "companyName": "University of Luxembourg"
+    "vite": "^6.2.0"
+  }
 }

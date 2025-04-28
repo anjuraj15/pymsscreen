@@ -22,6 +22,16 @@ export const saveExtractConfig = async (config) => {
   return axios.post('http://localhost:5000/save_extract_config', config);
 };
 
+export const loadExtractionConfig = async (workingDir) => {
+  try {
+    const params = new URLSearchParams({ working_directory: workingDir });
+    const res = await axios.get('http://localhost:5000/load_extraction_config', { params });
+    return parseFloat(res.data.ret_time_shift_tol) || 0.5;
+  } catch {
+    return 0.5;
+  }
+};
+
 export const extractData = (payload) => {
   return axios.post(`http://localhost:5000/extract_data`, payload, {
     headers: {

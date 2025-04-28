@@ -99,7 +99,7 @@ const CompoundPlot = ({ compoundGroup, onExportReady }) => {
           });
 
           const intensity = parseFloat(closestMS2.ms2_intensity);
-          const yClosest = useRelative ? [0, 1] : [0, intensity];
+          const yClosest = useRelative ? [0, 1050] : [0, intensity];
 
           const color = colorPalette[colorIndex % colorPalette.length];
           colorIndex++;
@@ -159,14 +159,14 @@ const CompoundPlot = ({ compoundGroup, onExportReady }) => {
         xaxis2: { title: 'RT (min)', range: [0, 30], anchor: 'y2' },
         yaxis2: {
           title: { text: 'MS2 Intensity' },
-          range: useRelative ? [0, 1.05] : [0, maxMS1Y * 1.1],
+          range: useRelative ? [0, 1050] : [0, maxMS1Y * 1.1],
           tickformat: useRelative ? '' : '.2e',
           anchor: 'x2'
         },
         xaxis3: { title: 'm/z', anchor: 'y3' },
         yaxis3: {
           title: { text: 'Fragment Intensity' },
-          range: useRelative ? [0, 1.05] : [0, maxFragmentY * 1.1],
+          range: useRelative ? [0, 1050] : [0, maxFragmentY * 1.1],
           tickformat: useRelative ? '' : '.2e',
           anchor: 'x3'
         }

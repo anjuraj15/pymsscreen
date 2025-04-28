@@ -64,9 +64,16 @@ const PlottingPage = () => {
     const adductSet = new Set(selectedAdducts.map(a => a.value));
     const grouped = {};
     compounds.forEach(row => {
-      if (!grouped[row.ID]) grouped[row.ID] = [];
-      if ((selectedTags.length === 0 || tagSet.has(row.tag)) &&
-          (selectedAdducts.length === 0 || adductSet.has(row.adduct))) {
+      if (!row.ID) return;
+
+      const rowTags = (typeof row.tag === 'string' ? row.tag : row.tag?.toString() || '').split(',').map(t => t.trim());
+      const rowAdduct = row.adduct ? row.adduct.trim() : '';
+
+      const tagMatch = selectedTags.length === 0 || rowTags.some(t => tagSet.has(t));
+      const adductMatch = selectedAdducts.length === 0 || adductSet.has(rowAdduct);
+
+      if (tagMatch && adductMatch) {
+        if (!grouped[row.ID]) grouped[row.ID] = [];
         grouped[row.ID].push(row);
       }
     });
@@ -74,22 +81,31 @@ const PlottingPage = () => {
     setGroupedByID(result);
     setCompoundOptions(result.map(entry => {
       const first = entry.group[0];
-      const isSuspect = first.known === 'suspect';
-      const label = isSuspect
-        ? `${first.ID} - ${parseFloat(first.mz).toFixed(4)}`
-        : `${first.ID} - ${first.Name || ''}`;
+      const isKnown = first.known === 'known';
+      const label = isKnown
+        ? `${first.ID} - ${first.Name || first.ID}` // Known: show ID and Name
+        : `${first.ID} - ${parseFloat(first.mz).toFixed(4)}`
       return {
         value: entry.id,
         label
       };
     }));
+   
     setCurrentIndex(0);
   }, [compounds, selectedTags, selectedAdducts]);
 
   const extractUnique = (data, field) => {
     const set = new Set();
     data.forEach((row) => {
-      (row[field]?.split(',') || []).forEach((val) => set.add(val.trim()));
+      const fieldValue = row[field];
+      if (typeof fieldValue === 'string') {
+        fieldValue.split(',').forEach((val) => {
+          if (val.trim()) set.add(val.trim());
+        });
+      } else if (typeof fieldValue === 'number') {
+        set.add(fieldValue.toString());
+      }
+      // else ignore null/undefined/other bad types
     });
     return Array.from(set).map((v) => ({ value: v, label: v }));
   };

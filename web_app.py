@@ -9,34 +9,12 @@ import yaml
 from rdkit import Chem
 from rdkit.Chem import Descriptors, rdMolDescriptors
 from pyopenms import MSExperiment, MzMLFile
-from waitress import serve
-import time
-import os
-import sys
-import ctypes
 
-if hasattr(sys, '_MEIPASS'):
-    lib_dir = sys._MEIPASS
-else:
-    lib_dir = os.path.dirname(os.path.abspath(__file__))
-
-try:
-    if sys.platform == "win32":
-        ctypes.CDLL(os.path.join(lib_dir, "python311.dll"))
-    elif sys.platform == "darwin":
-        ctypes.CDLL(os.path.join(lib_dir, "libpython3.11.dylib"))
-    elif sys.platform == "linux":
-        ctypes.CDLL(os.path.join(lib_dir, "libpython3.11.so.1.0"))
-except Exception as e:
-    print(f"[Startup] Failed to preload Python shared lib: {e}")
-
-
-start = time.time()
 app = Flask(__name__)
 from routes.pdf_export import register_pdf_export
 register_pdf_export(app)
 app.secret_key = 'supersecretkey'
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:5173"}})
 
 ADDUCT_MASS = {
     "[M+H]+": 1.007276,
@@ -60,7 +38,7 @@ def resolve_path(p):
 def save_state():
     try:
         data = request.get_json()
-        print(" Save request data:", data)
+        print("Save request data:", data)
         working_directory = os.path.expanduser(data.get("working_directory", "."))
 
         if not os.path.exists(working_directory):
@@ -110,7 +88,7 @@ def generate_table():
     try:
         body = request.get_json(force=True)
         working_directory = resolve_path(body.get("workingDirectory", ""))
-        print(f" Working directory: {working_directory}")
+        print(f"Working directory: {working_directory}")
 
         state_path = os.path.join(working_directory, "state.json")
         if not os.path.exists(state_path):
@@ -139,18 +117,18 @@ def generate_table():
                 try:
                     mol = Chem.MolFromSmiles(smiles)
                     if mol is None:
-                        print(f"⚠️ Invalid SMILES for ID {compound.ID}")
+                        print(f"Invalid SMILES for ID {compound.ID}")
                         continue
                     neutral_mass = Descriptors.ExactMolWt(mol)
                     formula = rdMolDescriptors.CalcMolFormula(mol)
                 except Exception as e:
-                    print(f"⚠️ Failed to parse SMILES for ID {compound.ID}: {e}")
+                    print(f"Failed to parse SMILES for ID {compound.ID}: {e}")
                     continue
             else:
                 try:
                     neutral_mass = float(getattr(compound, "mz"))
                 except Exception as e:
-                    print(f"⚠️ Missing or invalid mz for suspect compound ID {compound.ID}: {e}")
+                    print(f"Missing or invalid mz for suspect compound ID {compound.ID}: {e}")
                     continue
 
             for entry in state.get("mzml_files", []):
@@ -160,7 +138,7 @@ def generate_table():
 
                 adduct_mass = ADDUCT_MASS.get(adduct)
                 if adduct_mass is None:
-                    print(f"⚠️ Unknown adduct '{adduct}' for file {mzml_filename}")
+                    print(f" Unknown adduct '{adduct}' for file {mzml_filename}")
                     continue
 
                 mz = neutral_mass + adduct_mass
@@ -183,7 +161,7 @@ def generate_table():
         output_path = os.path.join(working_directory, "comprehensive_table.csv")
         pd.DataFrame(output_rows).to_csv(output_path, index=False)
 
-        print(f" Table saved at: {output_path}")
+        print(f"Table saved at: {output_path}")
         return jsonify({"message": "Table generated successfully", "path": output_path})
 
     except Exception as e:
@@ -224,8 +202,23 @@ def save_extract_config():
         return jsonify({"message": f"Saved to {config_path}"})
 
     except Exception as e:
-        print(f" Error saving extract_config.yaml: {e}")
+        print(f"❌ Error saving extract_config.yaml: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/load_extraction_config', methods=['GET'])
+def load_extraction_config():
+    working_dir = request.args.get('working_directory')
+    config_path = os.path.join(working_dir, 'extract_config.yaml')
+
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        ret_time_shift_tol = config.get('ret_time_shift_tol', 0.5)
+        return jsonify({'ret_time_shift_tol': ret_time_shift_tol})
+    except Exception as e:
+        print(f"Error loading extract_config.yaml: {e}")
+        return jsonify({'ret_time_shift_tol': 0.5})
+
 
 @app.route("/extract_data", methods=["POST"])
 def extract_data():
@@ -530,7 +523,7 @@ def save_qa_flags():
                    (df["adduct"] == adduct) & (df["tag"] == tag)
 
             print(f" Updating row for ID={compound_id}, adduct={adduct}, tag={tag}")
-            print("️  Incoming flags:", update)
+            print("  Incoming flags:", update)
 
             for display_key, summary_key in {
                 "MS1_Exists": "qa_ms1_exists",
@@ -646,16 +639,6 @@ def save_plots():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/", methods=["GET", "HEAD"])
-def index():
-    return "", 200
-
-@app.route('/ping')
-def ping():
-    return "pong", 200
 
 if __name__ == '__main__':
-    print("Flask backend starting...")
-    serve(app, host="127.0.0.1", port=5000)
-    print(" Startup time:", time.time() - start_time, "seconds")
-    serve(app,host="127.0.0.1", port=5000)
+    app.run(debug=True, port=5000)

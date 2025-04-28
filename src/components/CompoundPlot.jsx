@@ -4,6 +4,7 @@ import Plot from 'react-plotly.js';
 import Papa from 'papaparse';
 import axios from 'axios';
 import { useAppState } from '../context/AppStateContext';
+import { loadExtractionConfig, saveExtractConfig } from '../api/api';
 import chroma from 'chroma-js';
 
 const parsePeakList = (peakStr) => {
@@ -136,7 +137,8 @@ const CompoundPlot = ({ compoundGroup, onExportReady }) => {
   useEffect(() => {
     const fetchData = async () => {
       if (!compoundGroup?.length || !appState?.working_directory) return;
-
+      
+      const retTimeShiftTol = await loadExtractionConfig(appState.working_directory);
       let data = [];
       let maxMS1Y = 0;
       let maxFragmentY = 0;
@@ -176,18 +178,18 @@ const CompoundPlot = ({ compoundGroup, onExportReady }) => {
         }
 
         if (ms2Data.length && ms1RT !== 'N/A') {
-          const closestMS2 = ms2Data.reduce((a, b) => {
-            return Math.abs(parseFloat(a.ms2_rt) - ms1RT) < Math.abs(parseFloat(b.ms2_rt) - ms1RT) ? a : b;
-          });
-
-          const intensity = parseFloat(closestMS2.ms2_intensity);
-          const yClosest = useRelative ? [0, 1] : [0, intensity];
+          const candidates = ms2Data.filter(m => Math.abs(parseFloat(m.ms2_rt) - ms1RT) <= retTimeShiftTol);
+          if (candidates.length) {
+            const closestMS2 = candidates.reduce((a, b) => (
+              Math.abs(parseFloat(a.ms2_rt) - ms1RT) < Math.abs(parseFloat(b.ms2_rt) - ms1RT) ? a : b
+            ));
 
           const identifier = `${tag}_${adduct}`;
           const color = colors[uniqueIds.indexOf(identifier)];
-            data.push({
-            x: [closestMS2.ms2_rt, closestMS2.ms2_rt],
-            y: yClosest,
+
+          data.push({
+            x: [parseFloat(closestMS2.ms2_rt), parseFloat(closestMS2.ms2_rt)],
+            y: useRelative ? [0, 1050] : [0, maxMS1Y * 1.1],
             mode: 'lines',
             name: `MS2 Peak | ${tag} | RT: ${parseFloat(closestMS2.ms2_rt).toFixed(2)} | ${adduct} | ${compoundId}`,
             line: { dash: 'dash', color: color, width: 2 },
@@ -197,11 +199,12 @@ const CompoundPlot = ({ compoundGroup, onExportReady }) => {
           });
 
           const peaks = parsePeakList(closestMS2.peak_list);
-          const maxY = Math.max(...peaks.map(p => p.y));
-          if (!useRelative) maxFragmentY = Math.max(maxFragmentY, ...peaks.map(p => p.y));
+          if (peaks.length) {
+            const maxY = Math.max(...peaks.map(p => p.y));
+            maxFragmentY = useRelative ? 1050 : Math.max(maxFragmentY, maxY);
 
           peaks.forEach(p => {
-            const yVal = useRelative ? p.y / maxY : p.y;
+            const yVal = useRelative ? p.y / maxY * 1050 : p.y;
             data.push({
               x: [p.x, p.x],
               y: [0, yVal],
@@ -226,7 +229,9 @@ const CompoundPlot = ({ compoundGroup, onExportReady }) => {
             xaxis: 'x3',
             yaxis: 'y3'
           });
+         }
         }
+       }
       }
 
       const layout = {
@@ -247,14 +252,14 @@ const CompoundPlot = ({ compoundGroup, onExportReady }) => {
         xaxis2: { title:{ text: 'RT (min)'}, range: [0, 30], anchor: 'y2' },
         yaxis2: {
           title: { text: 'MS2 Intensity' },
-          range: useRelative ? [0, 1.05] : [0, maxMS1Y * 1.1],
+          range: useRelative ? [0, 1050] : [0, maxMS1Y * 1.1],
           tickformat: useRelative ? '' : '.2e',
           anchor: 'x2'
         },
         xaxis3: { title: 'm/z', anchor: 'y3' },
         yaxis3: {
           title: { text: 'Fragment Intensity' },
-          range: useRelative ? [0, 1.05] : [0, maxFragmentY * 1.1],
+          range: useRelative ? [0, 1050] : [0, maxFragmentY * 1.1],
           tickformat: useRelative ? '' : '.2e',
           anchor: 'x3'
         }
