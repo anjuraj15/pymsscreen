@@ -42,7 +42,33 @@ const LandingPage = () => {
     '[M+Cl]-', '[M+HCOO]-', '[M+CH3COO]-'
   ];
 
-  const handleSetWorkingDirectory = () => {
+  useEffect(() => {
+    if (appState.working_directory) {
+      setWorkingDirectory(appState.working_directory);
+
+      const files = appState.mzml_files.map(f => ({ name: f.file.split('/').pop() }));
+      setMzmlFiles(files);
+
+      const loadedTags = {};
+      const loadedAdducts = {};
+      appState.mzml_files.forEach(f => {
+        const fname = f.file.split('/').pop();
+        loadedTags[fname] = f.tag;
+        loadedAdducts[fname] = f.adduct;
+      });
+      setTags(loadedTags);
+      setAdductSelections(loadedAdducts);
+    }
+  }, [appState]);
+
+  useEffect(() => {
+    if (!appState.working_directory) {
+      // Auto-load state from backend if working directory is missing
+      handleLoadState();
+    }
+  }, []);
+
+  const handleSaveState = async () => {
     const compoundName = compoundCSV?.name || '';
     const mzmlData = mzmlFiles.map(file => ({
       file: file.name,
@@ -50,46 +76,27 @@ const LandingPage = () => {
       adduct: adductSelections[file.name] || '[M+H]+'
     }));
 
-    updateAppState({
+    const updatedState = {
       working_directory: workingDirectory,
       compound_csv: compoundName,
       mzml_files: mzmlData
-    });
+    };
 
-    alert("Working directory and files stored in context.");
+    try {
+      await saveState(updatedState);
+      updateAppState(updatedState);
+      alert('✅ State saved successfully!');
+    } catch (err) {
+      console.error('Save failed:', err);
+      alert('❌ Failed to save state.');
+    }
   };
-
-const handleSaveState = async () => {
-  const compoundName = compoundCSV?.name || '';
-  const mzmlData = mzmlFiles.map(file => ({
-    file: file.name,
-    tag: tags[file.name] || '',
-    adduct: adductSelections[file.name] || '[M+H]+'
-  }));
-
-  const updatedState = {
-    working_directory: workingDirectory,
-    compound_csv: compoundName,
-    mzml_files: mzmlData
-  };
-
-  // First update React context
-  updateAppState(updatedState);
-
-  // Then save to backend
-  try {
-    const res = await saveState({ ...appState, ...updatedState });
-    alert("State updated and saved successfully!");
-  } catch (err) {
-    console.error("Save failed:", err);
-    alert("Save failed.");
-  }
-};
 
   const handleLoadState = async () => {
     try {
       const res = await loadState({ working_directory: workingDirectory });
       const data = res.data;
+
       updateAppState(data);
       setWorkingDirectory(data.working_directory || '');
 
@@ -107,36 +114,36 @@ const handleSaveState = async () => {
       setTags(loadedTags);
       setAdductSelections(loadedAdducts);
 
-      alert('State loaded!');
+      alert('✅ State loaded successfully!');
     } catch (err) {
-      console.error("Load failed:", err);
-      alert('Failed to load state.');
+      console.error('Load failed:', err);
+      alert('❌ Failed to load state.');
     }
   };
 
   const handleGenerateTable = async () => {
     try {
-      const res = await generateTable({ workingDirectory });
-      alert('Table generated successfully!');
+      await generateTable({ workingDirectory });
+      alert('✅ Table generated successfully!');
     } catch (err) {
-      console.error("Table generation failed:", err);
-      alert("Failed to generate table.");
+      console.error('Table generation failed:', err);
+      alert('❌ Failed to generate table.');
     }
   };
- 
+
   const handleDeleteRow = (fileName) => {
-  setMzmlFiles(prev => prev.filter(file => file.name !== fileName));
-  setTags(prev => {
-    const updated = { ...prev };
-    delete updated[fileName];
-    return updated;
-  });
-  setAdductSelections(prev => {
-    const updated = { ...prev };
-    delete updated[fileName];
-    return updated;
-  });
-};
+    setMzmlFiles(prev => prev.filter(file => file.name !== fileName));
+    setTags(prev => {
+      const updated = { ...prev };
+      delete updated[fileName];
+      return updated;
+    });
+    setAdductSelections(prev => {
+      const updated = { ...prev };
+      delete updated[fileName];
+      return updated;
+    });
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#e0f4f7', fontFamily: 'sans-serif' }}>
