@@ -8,6 +8,8 @@ import { exportSummaryPDF } from '../api/api';
 import { saveQAFlags } from '../api/api';
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const PlottingPage = () => {
   const { appState } = useAppState();
   const [compounds, setCompounds] = useState([]);
@@ -38,7 +40,7 @@ const PlottingPage = () => {
   useEffect(() => {
     if (!appState?.working_directory) return;
     axios
-      .get('http://localhost:5000/load_comprehensive_table', {
+      .get(`${API_BASE}/load_comprehensive_table`, {
         params: { working_directory: appState.working_directory },
       })
       .then((res) => {
@@ -50,7 +52,7 @@ const PlottingPage = () => {
       .catch(console.error);
 
       // Fetch summary table
-    axios.get('http://localhost:5000/load_summary_table', {
+    axios.get(`${API_BASE}/load_summary_table`, {
        params: { working_directory: appState.working_directory },
      })
      .then(res => {
@@ -177,7 +179,7 @@ const handleExportPeakList = async () => {
     console.log('MS2 RT:', ms2Rt);  // Log MS2 RT value
 
     // Make the API call
-    const res = await axios.get('http://localhost:5000/get_csv', {
+    const res = await axios.get(`${API_BASE}/get_csv`, {
       params: {
         working_directory: appState.working_directory,
         compound_id: ID,

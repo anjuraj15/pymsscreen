@@ -14,7 +14,8 @@ app = Flask(__name__)
 from routes.pdf_export import register_pdf_export
 register_pdf_export(app)
 app.secret_key = 'supersecretkey'
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:5173"}})
+CORS(app, supports_credentials=True)
+
 
 ADDUCT_MASS = {
     "[M+H]+": 1.007276,
@@ -640,5 +641,5 @@ def save_plots():
 
 
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+if __name__ == "__main__":
+    print("This app is intended to be run by Gunicorn.")

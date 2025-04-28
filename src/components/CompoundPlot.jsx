@@ -7,6 +7,8 @@ import { useAppState } from '../context/AppStateContext';
 import { loadExtractionConfig, saveExtractConfig } from '../api/api';
 import chroma from 'chroma-js';
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const parsePeakList = (peakStr) => {
   return peakStr.split(';').map((pair) => {
     const [mz, intensity] = pair.split(':').map(Number);
@@ -25,7 +27,7 @@ const loadCSV = async (compoundId, type, tag, adduct, workingDir) => {
     adduct: encodeParam(adduct),
   });
   try {
-    const res = await axios.get(`http://localhost:5000/get_csv?${params}`);
+    const res = await axios.get(`${API_BASE}/get_csv?${params}`);
     return new Promise((resolve) => {
       Papa.parse(res.data, {
         header: true,
@@ -41,7 +43,7 @@ const loadCSV = async (compoundId, type, tag, adduct, workingDir) => {
 const loadComprehensiveTable = async (workingDir) => {
   const params = new URLSearchParams({ working_directory: workingDir });
   try {
-    const res = await axios.get('http://localhost:5000/load_comprehensive_table', { params });
+    const res = await axios.get(`${API_BASE}/load_comprehensive_table`, { params });
     return res.data;
   } catch {
     return [];
