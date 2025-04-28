@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { saveState, loadState, generateTable } from '../api/api';
+import { uploadFile, saveState, loadState, generateTable  } from '../api/api';
 import { useAppState } from '../context/AppStateContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,10 +28,7 @@ const LandingPage = () => {
     formData.append('file', file);
 
     try {
-      await fetch('https://your-backend-url/upload_file', {
-        method: 'POST',
-        body: formData,
-      });
+      await uploadFile(file);
       setCompoundCSV(file);
       alert('✅ Compound CSV uploaded!');
     } catch (err) {
@@ -50,10 +47,7 @@ const LandingPage = () => {
       formData.append('file', file);
 
       try {
-        await fetch('https://your-backend-url/upload_file', {
-          method: 'POST',
-          body: formData,
-        });
+        await uploadFile(file);
         uploadedFiles.push({ name: file.name });
       } catch (err) {
         console.error('mzML upload failed for', file.name, err);
@@ -77,12 +71,7 @@ const LandingPage = () => {
     };
 
     try {
-      const response = await fetch('https://your-backend-url/save_state', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedState),
-      });
-
+      const response = await saveState(updatedState);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -108,10 +97,7 @@ const LandingPage = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('https://your-backend-url/load_state_from_upload', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await loadStateFromFile(file);
       const data = await response.json();
 
       updateAppState(data);
@@ -137,12 +123,7 @@ const LandingPage = () => {
 
   const handleGenerateTable = async () => {
     try {
-      const response = await fetch('https://your-backend-url/generate_table', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
+      const response = await generateTable();
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -271,7 +252,7 @@ const LandingPage = () => {
 
       <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: '90%', margin: '20px auto' }}>
         <button onClick={handleSaveState} style={{ padding: '10px 15px', marginRight: '5px', borderRadius: '5px', background: 'linear-gradient(to bottom, #a7cce5, #bfe1f2)' }}>Save State</button>
-        <input type="file" accept="application/json" onChange={handleLoadState} style={{ padding: '10px 15px', marginRight: '5px', borderRadius: '5px', background: 'linear-gradient(to bottom, #a7cce5, #bfe1f2)' }}/>
+        <input type="file" accept="application/json" onChange={handleLoadState} style={{ padding: '10px 15px', marginRight: '5px', borderRadius: '5px', background: 'linear-gradient(to bottom, #a7cce5, #bfe1f2)' }}></input>
         <button onClick={handleGenerateTable} style={{ padding: '10px 15px', borderRadius: '5px', background: 'linear-gradient(to bottom, #a7cce5, #bfe1f2)' }}>Generate Table</button>
       </div>
 
