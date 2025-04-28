@@ -97,23 +97,30 @@ const LandingPage = () => {
     if (!file) return;
   
     try {
-      const response = await loadStateFromFile(file); // API call
-      const data = response.data;
+      const response = await loadStateFromFile(file); // ✅ Axios call
+      console.log('Load State response:', response);
   
-      // ✅ Update app global state
+      if (response.status !== 200) {
+        throw new Error('Failed to load state');
+      }
+  
+      const data = response.data; // ✅ Correct
+      console.log('Parsed state data:', data);
+  
+      if (!data || !data.compound_csv || !Array.isArray(data.mzml_files)) {
+        throw new Error('Invalid state format received');
+      }
+  
+      // Update appState
       updateAppState(data);
   
-      // ✅ Set the compound CSV filename
       setCompoundCSV({ name: data.compound_csv });
   
-      // ✅ Set mzML files to show in the table
       const files = data.mzml_files.map(f => ({ name: f.file }));
       setMzmlFiles(files);
   
-      // ✅ Set tags and adduct selections
       const loadedTags = {};
       const loadedAdducts = {};
-  
       data.mzml_files.forEach(f => {
         loadedTags[f.file] = f.tag;
         loadedAdducts[f.file] = f.adduct;
@@ -130,6 +137,11 @@ const LandingPage = () => {
   };
 
   const handleGenerateTable = async () => {
+    if (!compoundCSV || mzmlFiles.length === 0) {
+      alert('❌ Please upload compound CSV and mzML files before generating table.');
+      return;
+    }
+    
     try {
       const response = await generateTable();
       const blob = new Blob([response.data], { type: 'text/csv' }); 
