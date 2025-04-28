@@ -12,6 +12,7 @@ const LandingPage = () => {
   const [tags, setTags] = useState({});
   const [adductSelections, setAdductSelections] = useState({});
   const [draggedRowIndex, setDraggedRowIndex] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   const adducts = [
     '[M+H]+', '[M+Na]+', '[M+K]+', '[M-H]-', '[M+NH4]+',
