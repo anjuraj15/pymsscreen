@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // Dynamically load backend URL from environment
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = 'https://pymsscreen.onrender.com';
+
 
 export const saveState = (state) => {
   return axios.post(`${API_BASE}/save_state`, state);
