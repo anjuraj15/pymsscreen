@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { uploadFile, saveState, loadState, generateTable  } from '../api/api';
+import { uploadFile, saveState, loadStateFromFile, generateTable  } from '../api/api';
 import { useAppState } from '../context/AppStateContext';
 import { useNavigate } from 'react-router-dom';
 
